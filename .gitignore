@@ -26,7 +26,7 @@ companies/*
 !companies/_템플릿/**
 
 # 캘린더 생성물
-dashboard/node_modules/
+node_modules/
 dashboard/dist/
 dashboard/public/opportunities.json
 career-dashboard.html

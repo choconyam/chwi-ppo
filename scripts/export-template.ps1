@@ -50,6 +50,8 @@ try {
     "assets",
     "VERSION",
     "package.json",
+    "package-lock.json",
+    "bin",
     "run-dashboard.cmd",
     "run-dashboard-dev.cmd",
     "update-chwi-ppo.cmd",

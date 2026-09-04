@@ -1,9 +1,40 @@
 {
-  "name": "chwi-ppo",
+  "name": "create-chwi-ppo",
   "version": "1.0.0",
+  "description": "개인 경험 정리부터 공고 탐색, JD 분석, 지원서 작성과 마감 관리까지 잇는 취업 지원 워크벤치",
   "license": "PolyForm-Noncommercial-1.0.0",
-  "private": true,
+  "private": false,
   "type": "module",
+  "bin": {
+    "create-chwi-ppo": "bin/create-chwi-ppo.mjs"
+  },
+  "files": [
+    "bin/create-chwi-ppo.mjs",
+    "LICENSE.md",
+    "LICENSE_KO.md",
+    "NOTICE.md"
+  ],
+  "engines": {
+    "node": ">=20.19"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/choconyam/chwi-ppo.git"
+  },
+  "homepage": "https://github.com/choconyam/chwi-ppo#readme",
+  "bugs": {
+    "url": "https://github.com/choconyam/chwi-ppo/issues"
+  },
+  "keywords": [
+    "career",
+    "job-application",
+    "codex",
+    "claude-code",
+    "korean"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "validate:sample": "node scripts/validate-opportunities.mjs data/opportunities.example.json",
     "validate:opportunities": "node scripts/validate-opportunities.mjs",
@@ -13,6 +44,10 @@
     "privacy-check": "node scripts/scan-sensitive-data.mjs",
     "check:skills": "node scripts/check-skill-sync.mjs",
     "check:agents": "node scripts/check-agent-sync.mjs",
-    "test": "npm run validate:sample && npm run check:skills && npm run check:agents && npm --prefix dashboard run typecheck && npm --prefix dashboard run build && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/generate-dashboard.ps1 -InputFile data/opportunities.example.json -OutputFile career-dashboard.html"
+    "test:installer": "node scripts/test-create-installer.mjs",
+    "test": "npm run validate:sample && npm run check:skills && npm run check:agents && npm run test:installer && npm --prefix dashboard run typecheck && npm --prefix dashboard run build && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/generate-dashboard.ps1 -InputFile data/opportunities.example.json -OutputFile career-dashboard.html"
+  },
+  "dependencies": {
+    "adm-zip": "^0.6.0"
   }
 }

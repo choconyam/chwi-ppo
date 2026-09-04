@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const root = path.resolve(import.meta.dirname, '..');
 const publicTargets = [
-  'AGENTS.md', 'CLAUDE.md', 'README.md', 'LICENSE.md', 'LICENSE_KO.md', 'NOTICE.md', 'assets', '.gitignore', 'package.json',
+  'AGENTS.md', 'CLAUDE.md', 'README.md', 'LICENSE.md', 'LICENSE_KO.md', 'NOTICE.md', 'assets', '.gitignore', 'package.json', 'package-lock.json', 'bin',
   'VERSION', 'run-dashboard.cmd', 'run-dashboard-dev.cmd', 'update-chwi-ppo.cmd',
   'docs', '.agents', '.claude', '.codex', 'schemas', 'scripts', 'data/opportunities.example.json',
   'profile/README.md', 'profile/PROFILE_TEMPLATE.md',

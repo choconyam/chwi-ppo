@@ -10,6 +10,16 @@
 
 ## 1. 저장소 받기
 
+Node.js 20.19 이상이 설치되어 있다면 다음 명령으로 최신 릴리스를 설치한다.
+
+```powershell
+npm create chwi-ppo@latest
+```
+
+현재 위치에 `chwi-ppo` 폴더가 생성된다. 다른 폴더명을 쓰려면 `npm create chwi-ppo@latest my-career`처럼 이름을 함께 입력한다. 설치기는 릴리스 ZIP의 SHA-256과 내부 파일별 해시를 확인한다.
+
+Node.js를 설치하지 않으려면 GitHub 릴리스 페이지에서 ZIP을 직접 받는다.
+
 Git을 모르면 GitHub의 `Code → Download ZIP`을 선택해 압축을 푼다. Git을 사용한다면 다음처럼 복제한다.
 
 ```powershell

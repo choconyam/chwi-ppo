@@ -14,6 +14,22 @@
 
 처음이라면 [다른 사용자를 위한 시작 안내](docs/USER_GUIDE.md)를 따라 하면 됩니다. Codex와 Claude Code 모두 `/intake`, `/discover`, `/apply`, `/track`으로 호출합니다.
 
+## 빠른 설치
+
+Node.js 20.19 이상이 설치되어 있다면 터미널에서 다음 명령을 실행합니다.
+
+```powershell
+npm create chwi-ppo@latest
+```
+
+현재 위치에 `chwi-ppo` 폴더가 생성됩니다. 다른 폴더명을 쓰려면 이름을 함께 입력합니다.
+
+```powershell
+npm create chwi-ppo@latest my-career
+```
+
+설치기는 GitHub의 최신 릴리스와 SHA-256을 확인한 뒤 파일을 내려받습니다. 설치가 끝나면 생성된 폴더를 Codex 또는 Claude Code에서 열고 `/intake C:\본인자료폴더`부터 실행합니다. Node.js를 설치하지 않으려면 [GitHub 릴리스](https://github.com/choconyam/chwi-ppo/releases/latest)에서 ZIP을 직접 받을 수 있습니다.
+
 ## 전체 흐름
 
 ```text
@@ -148,3 +164,7 @@ React 화면 자체를 개발할 때만 Node.js 20.19 이상과 `run-dashboard-d
 ```
 
 계층과 모델 배정은 [docs/AGENT_ARCHITECTURE.md](docs/AGENT_ARCHITECTURE.md)에 정리돼 있습니다.
+
+---
+
+© 2026 choconyam. chwi-ppo는 [PolyForm Noncommercial License 1.0.0](LICENSE.md)에 따라 개인의 비상업적 취업 준비·학습·연구에 사용할 수 있습니다. 상업적 이용에는 저작권자의 사전 서면 허가가 필요합니다.
