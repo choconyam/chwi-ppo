@@ -1,0 +1,18 @@
+{
+  "name": "chwi-ppo",
+  "version": "1.0.0",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate:sample": "node scripts/validate-opportunities.mjs data/opportunities.example.json",
+    "validate:opportunities": "node scripts/validate-opportunities.mjs",
+    "validate:profile": "node scripts/validate-profile.mjs",
+    "sync:dashboard": "node scripts/sync-dashboard-data.mjs",
+    "build:standalone": "npm --prefix dashboard run build && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/generate-dashboard.ps1",
+    "privacy-check": "node scripts/scan-sensitive-data.mjs",
+    "check:skills": "node scripts/check-skill-sync.mjs",
+    "check:agents": "node scripts/check-agent-sync.mjs",
+    "test": "npm run validate:sample && npm run check:skills && npm run check:agents && npm --prefix dashboard run typecheck && npm --prefix dashboard run build && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/generate-dashboard.ps1 -InputFile data/opportunities.example.json -OutputFile career-dashboard.html"
+  }
+}

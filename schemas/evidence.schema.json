@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EvidenceClaim",
+  "type": "object",
+  "required": ["claimId", "fact", "source", "status"],
+  "properties": {
+    "claimId": { "type": "string", "pattern": "^[A-Z0-9]+-[0-9]{3}$" },
+    "fact": { "type": "string", "minLength": 1 },
+    "source": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["verified", "needs-confirmation", "prohibited"] }
+  },
+  "additionalProperties": false
+}

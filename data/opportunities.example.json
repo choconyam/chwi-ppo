@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "updatedAt": "2026-09-04T09:00:00+09:00",
+  "opportunities": [
+    {
+      "id": "sample-semiconductor-process",
+      "company": "샘플반도체",
+      "role": "공정기술",
+      "location": "경기",
+      "officialUrl": "https://example.com/jobs/sample-semiconductor-process",
+      "deadline": {
+        "date": "2026-09-12",
+        "time": "17:00",
+        "timeConfirmed": true,
+        "raw": "2026년 9월 12일 17:00 마감"
+      },
+      "verification": {
+        "status": "sample",
+        "checkedAt": "2026-09-04T09:00:00+09:00",
+        "evidence": "공개 저장소 화면 확인을 위한 가상 공고입니다."
+      },
+      "eligibility": {
+        "status": "eligible",
+        "reason": "예시: 전기전자 계열 학사 지원 가능"
+      },
+      "fit": {
+        "level": "high",
+        "decision": "proceed",
+        "rationale": "예시: 공정 데이터 분석과 조건별 검증 경험이 연결됨"
+      },
+      "application": { "status": "writing" },
+      "notes": "실제 공고가 아닌 UI 확인용 데이터"
+    },
+    {
+      "id": "sample-ai-engineer",
+      "company": "샘플테크",
+      "role": "AI 엔지니어",
+      "location": "서울",
+      "officialUrl": "https://example.com/jobs/sample-ai-engineer",
+      "deadline": {
+        "date": "2026-09-18",
+        "time": "23:59",
+        "timeConfirmed": true,
+        "raw": "2026.09.18 23:59"
+      },
+      "verification": {
+        "status": "sample",
+        "checkedAt": "2026-09-04T09:00:00+09:00",
+        "evidence": "공개 저장소 화면 확인을 위한 가상 공고입니다."
+      },
+      "eligibility": {
+        "status": "eligible",
+        "reason": "예시: 관련 전공 제한 없음"
+      },
+      "fit": {
+        "level": "medium",
+        "decision": "caution",
+        "rationale": "예시: 데이터 파이프라인은 적합하나 서비스 운영 경험 보완 필요"
+      },
+      "application": { "status": "analyzing" },
+      "notes": "실제 공고가 아닌 UI 확인용 데이터"
+    },
+    {
+      "id": "sample-equipment-engineer",
+      "company": "샘플장비",
+      "role": "장비 엔지니어",
+      "location": "충남",
+      "officialUrl": "https://example.com/jobs/sample-equipment-engineer",
+      "deadline": {
+        "date": "2026-09-25",
+        "time": null,
+        "timeConfirmed": false,
+        "raw": "9월 25일 마감"
+      },
+      "verification": {
+        "status": "needs-review",
+        "checkedAt": "2026-09-04T09:00:00+09:00",
+        "evidence": "예시: 마감 시간은 공식 페이지 재확인 필요"
+      },
+      "eligibility": {
+        "status": "needs-review",
+        "reason": "예시: 교대근무 조건 확인 필요"
+      },
+      "fit": {
+        "level": "unrated",
+        "decision": "unrated",
+        "rationale": "공식 확인 완료 후 평가"
+      },
+      "application": { "status": "discovered" },
+      "notes": "실제 공고가 아닌 UI 확인용 데이터"
+    }
+  ]
+}

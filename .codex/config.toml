@@ -1,0 +1,7 @@
+# 취업 지원 워크벤치 메인 오케스트레이터 기본값
+model = "gpt-5.6-sol"
+model_reasoning_effort = "high"
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 4

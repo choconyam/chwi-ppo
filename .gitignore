@@ -1,0 +1,46 @@
+# 원자료와 개인정보
+raw/
+성적증명서.*
+성적*.pdf
+성적*.xlsx
+기이수성적*.xlsx
+지원서_*.pdf
+*이력서*.pdf
+*_주민등록*
+
+# 실제 개인 프로필. 템플릿과 안내만 추적한다.
+profile/PROFILE.md
+profile/experiences/*.md
+!profile/experiences/_EXPERIENCE_TEMPLATE.md
+profile/.generated/
+
+# 실제 공고·진행 상태
+data/opportunities.json
+state/*
+!state/README.md
+
+# 회사별 실제 산출물. 템플릿과 안내만 추적한다.
+companies/*
+!companies/README.md
+!companies/_템플릿/
+!companies/_템플릿/**
+
+# 캘린더 생성물
+dashboard/node_modules/
+dashboard/dist/
+dashboard/public/opportunities.json
+career-dashboard.html
+release-manifest.json
+
+# OS·Office·작업 임시 파일
+Thumbs.db
+desktop.ini
+~$*.xlsx
+~$*.docx
+~$*.pptx
+tmp/
+.tmp/
+.work/
+private/
+*.log
+.updates/

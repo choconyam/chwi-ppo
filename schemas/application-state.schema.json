@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ApplicationState",
+  "type": "object",
+  "required": ["status"],
+  "properties": {
+    "status": {
+      "enum": ["discovered", "analyzing", "writing", "review", "ready", "submitted", "closed"]
+    },
+    "submissionConfirmedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "사용자가 제출 완료를 명시적으로 확인한 시각"
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "submitted" } } },
+      "then": { "required": ["submissionConfirmedAt"] }
+    }
+  ],
+  "additionalProperties": false
+}

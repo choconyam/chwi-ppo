@@ -1,0 +1,24 @@
+{
+  "name": "career-deadline-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "node ../scripts/sync-dashboard-data.mjs",
+    "dev": "vite --host 127.0.0.1",
+    "prebuild": "node ../scripts/sync-dashboard-data.mjs",
+    "build": "tsc --noEmit -p tsconfig.json && vite build && node ../scripts/build-standalone-shell.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "6.1.1",
+    "vite": "8.2.2",
+    "typescript": "7.0.2",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {}
+}

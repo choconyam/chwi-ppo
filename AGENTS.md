@@ -1,0 +1,95 @@
+# 취뽀(chwi-ppo) 취업 지원 워크벤치
+
+공식 채용 공고와 사용자가 확인한 경험만으로 `intake → discover → apply → track`을 수행한다. 모든 사용자-facing 산출물은 한국어로 작성한다. 처음 사용하는 사람은 [README.md](README.md)를 먼저 읽는다.
+
+이 파일이 프로젝트 규칙의 정본이다. Claude Code는 `CLAUDE.md`를 통해 이 파일을 읽고, Codex는 이 파일을 직접 읽는다.
+
+## 실행 순서
+
+```text
+원자료 ── intake ──> 사람용 프로필·경험 Markdown
+                         │
+공식 공고 ─ discover ────┼──> 적합도·지원 우선순위·캘린더
+                         │
+선택 직무 ── apply ──────┴──> 근거 매핑·초안·검수·최종본
+                                      │
+                         track <──────┘
+```
+
+1. `intake`: 최초 사용 또는 개인 자료가 바뀌었을 때만 실행한다.
+2. `discover`: 프로필을 기준으로 공고를 찾고 공식 출처·자격·마감을 검증한 뒤 적합도를 판단한다.
+3. `apply`: 선택·검증된 직무에 승인된 경험만 배치해 지원서를 작성하고 검수한다.
+4. `track`: 마감과 작성·검수·제출 상태를 갱신하고 React 캘린더 데이터를 만든다.
+
+`apply`는 원자료를 새로 구조화하지 않고 `intake` 산출물을 읽기 전용으로 사용한다. 소재가 부족하면 창작하지 말고 `intake 갱신 필요`로 중단한다.
+
+## 계층과 역할
+
+자세한 구조는 [docs/AGENT_ARCHITECTURE.md](docs/AGENT_ARCHITECTURE.md)를 따른다.
+
+| 워크플로 | 역할 | 결과 |
+|---|---|---|
+| intake | document-extractor, project-extractor, profile-synthesizer | `profile/PROFILE.md`, `profile/experiences/*.md` |
+| discover | job-finder, posting-verifier, jd-analyzer, role-fit-checker | `data/opportunities.json`, 회사별 00~02 파일 |
+| apply | evidence-matcher, draft-writer, fact-reviewer, revision-editor, final-red-team-reviewer | 회사별 03~07 및 `최종/` |
+| track | 결정론적 검증·동기화 스크립트 | React 캘린더와 진행 상태 |
+
+스킬은 사용자 명령 단위의 오케스트레이터이고, 에이전트는 한 가지 판단 역할만 맡는다. Codex는 `.agents/skills/`와 `.codex/agents/`, Claude Code는 `.claude/skills/`와 `.claude/agents/`를 읽는다. 두 플랫폼의 동명 스킬과 역할 본문은 같은 내용을 유지한다. 날짜 변환·중복·글자수·형식·개인정보 패턴처럼 규칙으로 판정 가능한 작업에는 모델을 쓰지 않고 `scripts/`를 사용한다.
+
+## 모델 정책
+
+| 등급 | Codex | 용도 |
+|---|---|---|
+| efficient | `gpt-5.6-luna`, `max` | 추출·검색·구조화·근거 매칭 |
+| strategic | `gpt-5.6-sol`, `high` | 자격 모호성·직무 선택·작성·수정 |
+| final-audit | `gpt-5.6-sol`, `xhigh` | 실제 제출 직전 독립 검수 |
+| deterministic | 모델 없음 | 날짜·중복·스키마·글자수·민감정보 검사 |
+
+- 역할 문서의 `model-tier`에 따라 서브에이전트 모델을 선택한다.
+- Codex에서는 가능하면 서브에이전트에 전체 대화를 넘기지 말고 역할, 입력 경로, 출력 경로, 중단 조건만 전달한다.
+- `final-audit`는 초안 작성 문맥을 물려받지 않는 독립 에이전트로 실행하며 읽기 전용이다.
+- Claude Code에서는 같은 등급을 사용 가능한 경량/고성능 모델로 대응한다. 특정 Claude 모델이 없다는 이유로 단계를 생략하지 않는다.
+- 모델 호출을 병렬화할 때는 서로 다른 파일에 쓰는 독립 작업만 병렬 실행한다. 같은 산출물을 동시에 수정하지 않는다.
+
+## 데이터 정본
+
+- 사람용 정본: `profile/PROFILE.md`, `profile/experiences/*.md`
+- 공고·캘린더용 구조 데이터: `data/opportunities.json`
+- 회사별 산출물: `companies/<회사명>/<직무명>/`
+
+개인 경험을 JSON만으로 저장하지 않는다. 각 경험은 Markdown 한 장으로 만들고, 사실마다 `claim-id`와 원문 근거를 표시한다. `apply`는 `검증됨` 상태의 사실만 사용할 수 있다.
+
+공고 데이터는 React 화면에서 사람이 확인하므로 JSON 사용을 허용한다. 공식 URL·마감 원문·확인 시각이 없는 공고는 `공식 확인 필요` 상태로 두며 확정 마감처럼 표시하지 않는다.
+
+## 게이트
+
+```text
+intake: 확인 필요 사실 존재 → 사용자 확인 전 verified 금지
+discover: 공식 출처 없음/자격 모호 → needs-review
+fit: 진행 | 주의 | 재검토
+fact review: PASS | REVISE | BLOCK
+final audit: PASS | REVISE | BLOCK
+```
+
+`재검토`, `REVISE`, `BLOCK`을 무시하고 다음 단계로 진행하지 않는다. 실제 지원서 제출이나 외부 전송은 이 프로젝트의 자동화 범위가 아니며 사용자의 명시적 요청과 확인 없이 수행하지 않는다.
+
+## 절대 원칙
+
+1. **사실 창작 금지.** 원천 자료에 없는 경험·수치·성과·기간·역할을 만들지 않는다.
+2. **상태 승격 금지.** 준비·진행·출시 전·검증 전을 완료나 성과로 바꾸지 않는다.
+3. **수치 보존.** 원문 수치를 임의로 반올림하거나 개선 폭으로 재해석하지 않는다.
+4. **본인 기여 분리.** 팀 성과와 사용자의 직접 판단·수행을 구분한다.
+5. **공식 출처 우선.** 비공식 채용 사이트는 후보 발견에만 사용하며 마감·자격 확정은 공식 페이지로 한다.
+6. **검수와 수정 분리.** fact-reviewer와 final-red-team-reviewer는 파일을 수정하지 않는다. revision-editor만 검수 지적 범위에서 수정한다.
+7. **평가자 독해 우선.** 내부 파일명·상태값·약어를 지원서에 그대로 옮기지 말고 지원자가 한 판단과 행동으로 설명한다.
+8. **개인정보 로컬 보관.** 이력서·성적표·실제 프로필·지원서·공고 진행 데이터는 `.gitignore` 대상이다.
+9. **`00_JD.md` 보존.** 공식 원문과 사용자 메모가 담긴 입력 파일은 후속 단계가 덮어쓰지 않는다.
+10. **외부 행동 금지.** 검색과 로컬 작성은 가능하지만 지원서 제출·메시지 전송·공개 게시를 자동 실행하지 않는다.
+11. **제출 완료 추정 금지.** `submitted`는 사용자가 실제 제출을 명시적으로 확인한 경우에만 기록하고 확인 시각을 남긴다. 그 전에는 `ready`를 유지한다.
+
+## 지원서 파일 규칙
+
+- 제출용 본문은 파일당 하나의 `text` 코드 블록에 둔다.
+- 모든 수치와 검증 가능한 주장에는 `claim-id` 또는 원천 파일 위치를 추적표에 남긴다.
+- 글자수는 `node scripts/check-submission.mjs <파일> <제한>`으로 검사한다.
+- 실제 제출 직전 `final-red-team-reviewer`와 민감정보 검사를 통과해야 `최종/`에 복사한다.

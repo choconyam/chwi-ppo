@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OpportunityRegistry",
+  "type": "object",
+  "required": ["version", "updatedAt", "opportunities"],
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "opportunities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "company", "role", "officialUrl", "deadline", "verification", "eligibility", "fit", "application"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]+$" },
+          "company": { "type": "string", "minLength": 1 },
+          "role": { "type": "string", "minLength": 1 },
+          "location": { "type": "string" },
+          "officialUrl": { "type": "string", "format": "uri" },
+          "deadline": {
+            "type": "object",
+            "required": ["date", "timeConfirmed"],
+            "properties": {
+              "date": { "type": ["string", "null"], "format": "date" },
+              "time": { "type": ["string", "null"], "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$" },
+              "timeConfirmed": { "type": "boolean" },
+              "raw": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+          "verification": {
+            "type": "object",
+            "required": ["status", "checkedAt", "evidence"],
+            "properties": {
+              "status": { "enum": ["verified", "needs-review", "sample"] },
+              "checkedAt": { "type": "string", "format": "date-time" },
+              "evidence": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+          "eligibility": {
+            "type": "object",
+            "required": ["status", "reason"],
+            "properties": {
+              "status": { "enum": ["eligible", "ineligible", "needs-review"] },
+              "reason": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+          "fit": {
+            "type": "object",
+            "required": ["level", "decision", "rationale"],
+            "properties": {
+              "level": { "enum": ["high", "medium", "low", "unrated"] },
+              "decision": { "enum": ["proceed", "caution", "reconsider", "unrated"] },
+              "rationale": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+          "application": {
+            "type": "object",
+            "required": ["status"],
+            "properties": {
+              "status": { "enum": ["discovered", "analyzing", "writing", "review", "ready", "submitted", "closed"] },
+              "submissionConfirmedAt": { "type": "string", "format": "date-time" }
+            },
+            "allOf": [
+              {
+                "if": { "properties": { "status": { "const": "submitted" } } },
+                "then": { "required": ["submissionConfirmedAt"] }
+              }
+            ],
+            "additionalProperties": false
+          },
+          "notes": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
