@@ -1,6 +1,6 @@
 # 취뽀 (chwi-ppo)
 
-![version](https://img.shields.io/badge/version-v1.0.0-blue) ![license](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-orange) ![Codex](https://img.shields.io/badge/Codex-%2Fintake%20%2Fdiscover%20%2Fapply%20%2Ftrack-black) ![Claude Code](https://img.shields.io/badge/Claude%20Code-%2Fintake%20%2Fdiscover%20%2Fapply%20%2Ftrack-D97757)
+![version](https://img.shields.io/badge/version-v1.1.0-blue) ![license](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-orange) ![Codex](https://img.shields.io/badge/Codex-%2Fintake%20%2Fdiscover%20%2Fapply%20%2Ftrack-black) ![Claude Code](https://img.shields.io/badge/Claude%20Code-%2Fintake%20%2Fdiscover%20%2Fapply%20%2Ftrack-D97757)
 
 <p align="center">
   <img src="assets/chwi-ppo-cover.png" alt="chwi-ppo 안내판을 든 벌 캐릭터" width="100%">
@@ -16,16 +16,27 @@
 
 ## 빠른 시작
 
-별도 npm 설치 명령 없이 [GitHub 저장소](https://github.com/choconyam/chwi-ppo)에서 `Code → Download ZIP`을 누르고 압축을 풉니다. Git을 사용한다면 다음처럼 받을 수도 있습니다.
+1. [GitHub 저장소](https://github.com/choconyam/chwi-ppo)에서 `Code → Download ZIP`을 선택하고 압축을 풉니다.
+2. `AGENTS.md`가 있는 최상위 폴더를 Codex 또는 Claude Code에서 엽니다.
+3. `/intake C:\본인자료폴더`를 입력합니다.
+
+Git을 사용한다면 ZIP 다운로드 대신 다음 명령으로 받습니다.
 
 ```powershell
 git clone https://github.com/choconyam/chwi-ppo.git
 cd chwi-ppo
 ```
 
-`AGENTS.md`가 있는 프로젝트 최상위 폴더를 Codex 또는 Claude Code에서 열고 `/intake C:\본인자료폴더`부터 실행합니다.
+실행 준비물은 **Codex 또는 Claude Code, Node.js 20.19 이상**입니다. `node --version`으로 확인하세요. Node.js는 변경 감지·형식 검사 스크립트에 필요하며, 취뽀를 npm 패키지로 설치할 필요는 없습니다. Windows에서 상황판만 열 때는 Node.js가 필요 없습니다.
 
-GitHub에서 받는 방식과 실행 준비물은 별개입니다. 전체 워크플로의 변경 감지·형식 검사 같은 로컬 스크립트에는 **Node.js 20.19 이상**이 필요합니다. `node --version`으로 확인하세요. 상황판만 열 때는 Node.js가 필요 없고, React 화면을 개발할 때 사용하는 npm 의존성은 `run-dashboard-dev.cmd`가 별도로 설치합니다.
+## 1.1.0 주요 변경
+
+- **자료 정리 이어하기**: README·요약부터 작은 단위로 읽고 결과를 저장합니다. 중단되면 완료된 결과를 재사용하고, 실패한 자료만 따로 처리합니다.
+- **공고 누락 방지 보완**: 검색한 목록과 미처리 후보를 기록하고, 세부 직무·자격을 확인하지 못한 공고는 추가 확인 대상으로 남깁니다.
+- **지원서 재작업 축소**: 변경된 문항과 근거만 다시 처리하고, 내용이 달라지면 이전 검수 결과를 그대로 사용하지 않습니다.
+- **설치·상황판 개선**: GitHub 다운로드를 기본 경로로 정리하고, 단일 HTML의 스크립트 삽입·달력 날짜 처리와 새 출력 폴더 생성을 보완했습니다.
+
+위 버전은 현재 저장소 코드 기준입니다. GitHub 릴리스와 자동 업데이트 배포 시점은 다를 수 있습니다.
 
 ## 전체 흐름
 
@@ -102,22 +113,23 @@ Claude Code: /apply 샘플전자 공정기술 final
 
 프로젝트 루트의 `run-dashboard.cmd`를 더블클릭합니다. Windows 기본 PowerShell이 최신 데이터를 읽기 전용 `career-dashboard.html`에 넣고 기본 브라우저로 엽니다. 캘린더만 볼 때는 Node.js나 별도 프로그램을 설치하지 않아도 됩니다.
 
-실행할 때 하루에 한 번 GitHub 최신 릴리스를 확인합니다. 새 버전이 있으면 스킬·에이전트·검증 코드·대시보드만 갱신하고 개인 프로필·실제 회사 자료·공고 데이터·지원 상태는 보존합니다. 인터넷 연결이 없거나 확인에 실패해도 현재 대시보드는 정상적으로 열립니다.
+실행할 때 하루에 한 번 설치 버전보다 높은 GitHub 릴리스가 있는지 확인합니다. `main`에 새 커밋이 올라온 것만으로는 자동 업데이트되지 않습니다. 사용자 자료 보존과 업데이트 방법은 아래 안내를 확인하세요. 인터넷 연결이 없거나 확인에 실패해도 현재 대시보드는 열립니다.
 
 브라우저에서 마감, 지원 자격, 적합도, 공식 확인 여부, 작성 상태를 확인합니다. 실제 공고 파일이 아직 없으면 가상 회사가 표시되고, 화면 상단에 `예시 데이터`라고 표시됩니다. 추천받은 공고를 일정으로 관리하고 싶을 때 `/track`을 요청합니다. 해당 회사·직무 레코드만 `data/opportunities.json`에 추가·수정하며 HTML 코드를 다시 쓰지 않습니다. 이렇게 만들어진 실제 데이터와 생성 HTML은 Git에서 제외됩니다.
 
 React 화면 자체를 개발할 때만 Node.js 20.19 이상과 `run-dashboard-dev.cmd`를 사용합니다.
 
-## 자동 업데이트
+## 업데이트
 
-- 평소에는 `run-dashboard.cmd`가 24시간에 한 번 자동 확인합니다.
-- 즉시 확인하려면 `update-chwi-ppo.cmd`를 더블클릭합니다.
-- Git으로 받은 사용자는 로컬 변경이 없을 때 `git pull --ff-only`로 갱신합니다.
-- `Download ZIP`으로 받은 사용자는 처음에는 release manifest가 없어도 정상입니다. 첫 업데이트부터 GitHub 릴리스 ZIP의 SHA-256과 내부 파일 목록을 검증한 뒤 갱신합니다.
-- 교체 전 파일은 `.updates/backups/`에 보관하며 실패하면 이전 파일로 복구합니다.
-- 업데이트 기록은 `.updates/state.json`과 `.updates/update.log`에서 확인할 수 있습니다.
+**Git으로 받은 경우**: 공용 파일에 로컬 수정이 없다면 프로젝트 폴더에서 `git pull --ff-only`를 실행합니다. 새 릴리스를 기다리지 않고 현재 브랜치의 최신 커밋을 받습니다. 충돌이나 오류가 나면 강제로 덮어쓰지 마세요.
 
-자동 업데이트 실행기는 `v1.0.0`부터 포함돼 있습니다. 이후 버전은 위 방식으로 갱신됩니다.
+**ZIP으로 받은 경우**: `update-chwi-ppo.cmd`를 더블클릭해 새 릴리스를 확인합니다. `run-dashboard.cmd`도 실행 시 24시간에 한 번 확인합니다. 이 실행기는 **설치 버전보다 높은 릴리스**가 있어야 갱신하므로, GitHub `main`의 최신 코드와 설치 버전이 다를 수 있습니다.
+
+- ZIP 업데이트는 내려받은 릴리스 ZIP과 내부 파일 목록의 SHA-256을 검증합니다. 처음 다운로드한 폴더에 `release-manifest.json`이 없어도 됩니다.
+- ZIP으로 교체할 공용 파일은 `.updates/backups/`에 백업하고, 적용 실패 시 복구합니다. 개인 프로필·실제 회사 자료·공고 데이터·지원 상태는 교체 대상에서 제외합니다.
+- Git 폴더에서 업데이트 실행기를 사용하는 경우에도 먼저 새 릴리스 여부를 확인합니다. 갱신할 때는 추적 파일의 로컬 수정 여부를 검사한 뒤 `git pull --ff-only`를 실행합니다.
+- 실행기 기록은 `.updates/state.json`과 `.updates/update.log`에서 확인합니다.
+- `Download ZIP`을 다시 받아 기존 폴더 전체에 덮어쓰지 마세요. 별도 폴더에서 확인하고 개인 자료와 로컬 설정을 보존해야 합니다.
 
 ## 선택 사항: humanizer-ko
 

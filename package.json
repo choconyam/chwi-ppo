@@ -1,6 +1,6 @@
 {
   "name": "create-chwi-ppo",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "개인 경험 정리부터 공고 탐색, JD 분석, 지원서 작성과 마감 관리까지 잇는 취업 지원 워크벤치",
   "license": "PolyForm-Noncommercial-1.0.0",
   "private": false,
