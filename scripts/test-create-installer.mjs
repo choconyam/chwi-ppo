@@ -38,7 +38,7 @@ try {
   assert.equal(await fs.readFile(path.join(target, 'AGENTS.md'), 'utf8'), '# test project\n');
   await assert.rejects(() => installReleaseArchive(valid, '1.0.0', target), /이미 존재/);
   assert.throws(() => verifyReleaseArchive(createRelease({ corrupt: true }), '1.0.0'), /검증에 실패/);
-  console.log('npm create 설치기 검증 통과');
+  console.log('기존 릴리스 설치기 호환성 검증 통과');
 } finally {
   await fs.rm(temp, { recursive: true, force: true });
 }

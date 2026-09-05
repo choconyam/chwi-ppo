@@ -25,3 +25,7 @@ codex-reasoning: high
 6. 본문 아래 근거 추적표에 사용한 모든 claim-id를 기록한다.
 
 제출용 본문은 하나의 `text` 코드 블록에 두고 글자수 제한을 넘지 않는다.
+
+## 실행 단위
+
+docs/WORKFLOW_RUNTIME.md의 apply 입력 묶음에서 action=draft인 문항만 작성한다. 요청 문항을 한 작업으로 묶고, 변경되지 않은 문항은 다시 쓰지 않는다. 경력 지원자는 해당 직무에서 맡은 책임·행동·결과를 앞에 둔다. intake로 원자료를 재수집하거나 unverified 사실로 분량을 채우지 않는다.

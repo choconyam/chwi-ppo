@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-09-05T00:00:00.000Z",
+  "sources": [
+    {
+      "id": "portal-calendar-example",
+      "url": "https://jobs.example/calendar",
+      "checkedAt": "2026-09-05T00:00:00.000Z",
+      "query": "반도체 공정 신입 인턴",
+      "filters": {
+        "region": [
+          "수도권",
+          "충청권"
+        ]
+      },
+      "complete": true,
+      "pagesVisited": 2,
+      "expectedPages": 2,
+      "listedCount": 3,
+      "accessStatus": "ok"
+    }
+  ],
+  "postings": [
+    {
+      "sourceId": "portal-calendar-example",
+      "sourceRowId": "calendar-101",
+      "url": "https://jobs.example/postings/101?utm_source=calendar",
+      "company": "샘플전자",
+      "title": "2026 하반기 신입·경력 통합채용",
+      "size": "large",
+      "careerTypes": [
+        "mixed"
+      ],
+      "deadline": {
+        "at": "2026-09-30T14:59:59.000Z",
+        "confirmed": true
+      },
+      "roles": [
+        {
+          "id": "process-engineering",
+          "title": "공정기술",
+          "url": "https://jobs.example/postings/101/roles/process-engineering",
+          "careerTypes": [
+            "mixed"
+          ],
+          "keywords": [
+            "반도체",
+            "공정"
+          ]
+        },
+        {
+          "id": "software",
+          "title": "소프트웨어",
+          "careerTypes": [
+            "new"
+          ],
+          "keywords": [
+            "플랫폼"
+          ]
+        }
+      ],
+      "rawEvidence": {
+        "career": "신입·경력",
+        "deadline": "9월 30일 23:59"
+      }
+    },
+    {
+      "sourceId": "portal-calendar-example",
+      "sourceRowId": "calendar-102",
+      "url": "https://jobs.example/postings/102",
+      "company": "예시소재",
+      "title": "직무 통합 채용",
+      "careerTypes": [
+        "any"
+      ],
+      "deadline": "2026-10-10T14:59:59.000Z",
+      "roles": [],
+      "rawEvidence": {
+        "note": "세부 직무는 공고 안에서 확인"
+      }
+    },
+    {
+      "sourceId": "portal-calendar-example",
+      "sourceRowId": "calendar-103",
+      "url": "https://jobs.example/postings/103",
+      "company": "예시연구소",
+      "title": "박막 연구 인턴",
+      "size": "public",
+      "careerTypes": [
+        "intern"
+      ],
+      "deadline": "2026-09-20T14:59:59.000Z",
+      "roles": [
+        {
+          "id": "thin-film-intern",
+          "title": "박막 공정 연구 인턴",
+          "careerTypes": [
+            "intern"
+          ],
+          "keywords": [
+            "박막",
+            "증착"
+          ]
+        }
+      ],
+      "rawEvidence": {
+        "employment": "채용연계형 인턴"
+      }
+    }
+  ]
+}

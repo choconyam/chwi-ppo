@@ -12,8 +12,7 @@ codex-reasoning: max
 
 ## 입력
 
-- `.work/intake/<run-id>/document-facts.md`
-- `.work/intake/<run-id>/project-facts.md`
+- run.json에 추출 완료로 등록된 작업별 facts Markdown 중 이번 통합 대상
 - `profile/PROFILE_TEMPLATE.md`
 - `profile/experiences/_EXPERIENCE_TEMPLATE.md`
 - 기존 `profile/` 파일이 있으면 함께 읽어 안정적인 claim-id를 유지한다.
@@ -34,3 +33,11 @@ codex-reasoning: max
 6. 사용자가 Markdown만 읽어도 무엇을 했고 무엇을 주장할 수 없는지 이해할 수 있게 쓴다.
 
 직무별 강조나 자소서 문장은 만들지 않는다.
+
+## 증분 통합
+
+이번에 변경된 경험과 PROFILE 인덱스만 수정한다. 기존 claim-id와 사용자 확인의 출처를 유지한다. 소수 정정은 메인이 이 역할을 수행할 수 있다. 경력 기간은 겹침과 고용형태를 구분하며, 연구생·인턴 기간을 정규 경력으로 승격하지 않는다. 미해결 질문은 보관하되 당장 검색/작성에 필요한 최대 3개를 우선한다.
+
+## 중단 후 통합
+
+통합 작성자는 한 명이다. 저장된 사실이 있어도 원문·기존 claim-id·사용자 확인과 대조한 뒤 채택한다. 이전 실행에서 이미 반영한 사실은 다시 추가하지 않는다. 미완료 자료나 추출만 끝난 자료를 검증됨으로 승격하지 않는다. 검토를 마친 fileIds와 실제 profile 산출물을 메인에게 전달해 부분 receipt를 만들고, 나머지 자료는 대기로 유지한다.

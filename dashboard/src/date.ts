@@ -40,5 +40,8 @@ export function calendarDates(month: Date): Date[] {
   const first = new Date(year, monthIndex, 1);
   const mondayOffset = (first.getDay() + 6) % 7;
   const start = new Date(year, monthIndex, 1 - mondayOffset);
-  return Array.from({ length: 42 }, (_, index) => new Date(year, monthIndex, start.getDate() + index));
+  return Array.from(
+    { length: 42 },
+    (_, index) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + index),
+  );
 }

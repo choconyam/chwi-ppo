@@ -3,12 +3,15 @@
 param(
   [switch]$Auto,
   [switch]$Force,
-  [switch]$CheckOnly
+  [switch]$CheckOnly,
+  [string]$ReleaseApi = "https://api.github.com/repos/choconyam/chwi-ppo/releases/latest"
 )
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop
+Import-Module Microsoft.PowerShell.Archive -ErrorAction Stop
 
 $projectRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
 $updateRoot = Join-Path $projectRoot ".updates"
@@ -17,7 +20,6 @@ $logPath = Join-Path $updateRoot "update.log"
 $lockPath = Join-Path $updateRoot "update.lock"
 $installedManifestPath = Join-Path $updateRoot "installed-manifest.json"
 $repoSlug = "choconyam/chwi-ppo"
-$releaseApi = "https://api.github.com/repos/$repoSlug/releases/latest"
 $checkIntervalHours = 24
 $lockStream = $null
 
@@ -109,8 +111,12 @@ function Test-ManagedPath {
     ".codex/config.toml",
     "AGENTS.md",
     "CLAUDE.md",
+    "LICENSE.md",
+    "LICENSE_KO.md",
+    "NOTICE.md",
     "README.md",
     "package.json",
+    "package-lock.json",
     "run-dashboard.cmd",
     "run-dashboard-dev.cmd",
     "update-chwi-ppo.cmd",
@@ -118,6 +124,8 @@ function Test-ManagedPath {
     "update-donbeolja.cmd",
     "VERSION",
     "data/opportunities.example.json",
+    "data/discovery-snapshot.example.json",
+    "data/search-criteria.example.json",
     "profile/README.md",
     "profile/PROFILE_TEMPLATE.md",
     "profile/experiences/_EXPERIENCE_TEMPLATE.md",
@@ -132,6 +140,8 @@ function Test-ManagedPath {
     ".agents/",
     ".claude/",
     ".codex/agents/",
+    "assets/",
+    "bin/",
     "dashboard/",
     "docs/",
     "schemas/",
@@ -160,7 +170,7 @@ function Get-ReleaseMetadata {
     "User-Agent" = "Chwi-ppo-Updater"
     "X-GitHub-Api-Version" = "2022-11-28"
   }
-  return Invoke-RestMethod -Uri $releaseApi -Headers $headers -Method Get -UseBasicParsing
+  return Invoke-RestMethod -Uri $ReleaseApi -Headers $headers -Method Get -UseBasicParsing
 }
 
 function Test-IsChwiPpoClone {

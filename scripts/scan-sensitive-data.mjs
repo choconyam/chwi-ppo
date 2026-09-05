@@ -6,6 +6,7 @@ const publicTargets = [
   'AGENTS.md', 'CLAUDE.md', 'README.md', 'LICENSE.md', 'LICENSE_KO.md', 'NOTICE.md', 'assets', '.gitignore', 'package.json', 'package-lock.json', 'bin',
   'VERSION', 'run-dashboard.cmd', 'run-dashboard-dev.cmd', 'update-chwi-ppo.cmd',
   'docs', '.agents', '.claude', '.codex', 'schemas', 'scripts', 'data/opportunities.example.json',
+  'data/discovery-snapshot.example.json', 'data/search-criteria.example.json',
   'profile/README.md', 'profile/PROFILE_TEMPLATE.md',
   'profile/experiences/_EXPERIENCE_TEMPLATE.md', 'companies/README.md',
   'companies/_템플릿', 'dashboard/src', 'dashboard/index.html', 'dashboard/package.json',

@@ -62,6 +62,8 @@ try {
     "schemas",
     "scripts",
     "data/opportunities.example.json",
+    "data/discovery-snapshot.example.json",
+    "data/search-criteria.example.json",
     "profile/README.md",
     "profile/PROFILE_TEMPLATE.md",
     "profile/experiences/_EXPERIENCE_TEMPLATE.md",

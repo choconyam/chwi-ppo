@@ -43,5 +43,6 @@ $result = [regex]::Replace(
 )
 
 $utf8 = New-Object System.Text.UTF8Encoding($false)
+[System.IO.Directory]::CreateDirectory([System.IO.Path]::GetDirectoryName($outputPath)) | Out-Null
 [System.IO.File]::WriteAllText($outputPath, $result, $utf8)
 Write-Output "Dashboard generated: $outputPath"

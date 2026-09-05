@@ -40,12 +40,15 @@
     "validate:opportunities": "node scripts/validate-opportunities.mjs",
     "validate:profile": "node scripts/validate-profile.mjs",
     "sync:dashboard": "node scripts/sync-dashboard-data.mjs",
-    "build:standalone": "npm --prefix dashboard run build && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/generate-dashboard.ps1",
+    "build:standalone": "npm --prefix dashboard run build && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/generate-dashboard.ps1 && node scripts/test-dashboard.mjs",
     "privacy-check": "node scripts/scan-sensitive-data.mjs",
     "check:skills": "node scripts/check-skill-sync.mjs",
     "check:agents": "node scripts/check-agent-sync.mjs",
     "test:installer": "node scripts/test-create-installer.mjs",
-    "test": "npm run validate:sample && npm run check:skills && npm run check:agents && npm run test:installer && npm --prefix dashboard run typecheck && npm --prefix dashboard run build && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/generate-dashboard.ps1 -InputFile data/opportunities.example.json -OutputFile career-dashboard.html"
+    "test:updater": "node scripts/test-github-update.mjs",
+    "test:dashboard": "node scripts/test-dashboard.mjs",
+    "test:workflow": "node --test scripts/tests/intake.test.mjs scripts/tests/intake-run.test.mjs scripts/tests/discovery.test.mjs scripts/tests/apply.test.mjs scripts/tests/workflow.test.mjs",
+    "test": "npm run validate:sample && npm run check:skills && npm run check:agents && npm run test:workflow && npm run test:installer && npm run test:updater && npm --prefix dashboard run typecheck && npm --prefix dashboard run build && powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/generate-dashboard.ps1 -InputFile data/opportunities.example.json -OutputFile .tmp/dashboard-test.html && node scripts/test-dashboard.mjs .tmp/dashboard-test.html"
   },
   "dependencies": {
     "adm-zip": "^0.6.0"

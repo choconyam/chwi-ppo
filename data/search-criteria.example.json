@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "careerTypes": [
+    "new",
+    "intern"
+  ],
+  "experienceMonths": 0,
+  "experienceMonthsBasis": "verified-relevant",
+  "sizes": [
+    "large",
+    "mid",
+    "small",
+    "startup",
+    "public"
+  ],
+  "keywords": [
+    "반도체",
+    "공정",
+    "박막",
+    "증착"
+  ],
+  "regions": [
+    "수도권",
+    "충청권"
+  ],
+  "industries": [
+    "반도체",
+    "전자"
+  ]
+}

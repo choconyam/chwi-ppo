@@ -10,12 +10,16 @@ raw/
 
 # 실제 개인 프로필. 템플릿과 안내만 추적한다.
 profile/PROFILE.md
+profile/questions.md
 profile/experiences/*.md
 !profile/experiences/_EXPERIENCE_TEMPLATE.md
 profile/.generated/
 
 # 실제 공고·진행 상태
 data/opportunities.json
+data/company-watchlist.json
+data/search-criteria.json
+data/discovery-snapshot.json
 state/*
 !state/README.md
 
