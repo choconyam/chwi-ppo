@@ -18,7 +18,7 @@
 
 1. `intake`: 최초 정리는 요약 우선·작은 작업 단위로 수행하고 결과를 즉시 저장한다. 중단 시 기존 run의 완료 결과부터 재사용한다. 이후에는 새 자료·정정만 갱신하며 기존 프로필을 불필요하게 재분석하지 않는다.
 2. `discover`: 자소설닷컴 등의 공고 목록에서 사용자 조건에 맞는 후보를 추리고, 기업별 세부 JD를 공식 검증해 추천한다. 수집한 범위와 미처리 후보를 기록한다.
-3. `apply`: 선택·검증된 직무에 승인된 경험만 배치해 지원서를 작성하고 검수한다.
+3. `apply`: 선택·검증된 직무에 승인된 경험만 배치해 검수 전 초안을 먼저 전달한다. 중간 사실 검수는 사용자가 요청할 때만, 독립 최종 검수는 내용 확정 뒤 `final` 요청 때 수행한다.
 4. `track`: 사용자가 일정 관리를 원할 때 검증된 공고와 작성·검수·제출 상태를 캘린더에 반영한다. 캘린더는 추천·작성의 선행 조건이 아니다.
 
 `apply`는 원자료를 새로 구조화하지 않고 `intake` 산출물을 읽기 전용으로 사용한다. 소재가 부족한 문항만 `intake 갱신 필요`로 남기고 나머지 작업은 진행한다.
@@ -31,10 +31,10 @@
 |---|---|---|
 | intake | document-extractor, project-extractor, profile-synthesizer | `profile/PROFILE.md`, `profile/experiences/*.md` |
 | discover | 목록 수집·후보 분류, posting-verifier, jd-analyzer, role-fit-checker | 검색 snapshot·후보 큐, 회사별 00~02 파일 |
-| apply | evidence-matcher, draft-writer, fact-reviewer, revision-editor, final-red-team-reviewer | 회사별 03~07 및 `최종/` |
+| apply | evidence-matcher, draft-writer, 선택적 fact-reviewer, revision-editor, final-red-team-reviewer | 회사별 03~07 및 `최종/` |
 | track | 결정론적 검증·동기화 스크립트 | React 캘린더와 진행 상태 |
 
-스킬은 사용자 명령 단위의 오케스트레이터이고, 에이전트는 한 가지 판단 역할만 맡는다. Codex는 `.agents/skills/`와 `.codex/agents/`, Claude Code는 `.claude/skills/`와 `.claude/agents/`를 읽는다. 두 플랫폼의 동명 스킬과 역할 본문은 같은 내용을 유지한다. 날짜 변환·중복·글자수·형식·개인정보 패턴처럼 규칙으로 판정 가능한 작업에는 모델을 쓰지 않고 `scripts/`를 사용한다.
+스킬은 사용자 명령 단위의 오케스트레이터이고, 에이전트는 한 가지 판단 역할만 맡는다. Codex는 `.agents/skills/`와 `.codex/agents/`, Claude Code는 `.claude/skills/`와 `.claude/agents/`를 읽는다. 두 플랫폼의 동명 스킬과 역할 본문은 같은 내용을 유지한다. 날짜 변환·중복·글자수·형식·개인정보 패턴처럼 규칙으로 판정 가능한 작업에는 모델을 쓰지 않고 `scripts/`를 사용한다. apply의 형식 검사된 초안은 fact/final PASS나 `ready`로 승격하지 않는다.
 
 역할 하나가 에이전트 호출 하나를 뜻하지 않는다. 소규모 추출·통합·소재매핑은 메인이 수행하고, 공식 검증과 JD 구조화는 개인 프로필을 읽지 않는 한 작업으로 묶을 수 있다. 큰 독립 묶음만 기본 동시 2개로 위임한다. 작성자와 사실/최종 검수자는 분리한다.
 
@@ -74,7 +74,7 @@
 intake: 확인 필요 사실 존재 → 사용자 확인 전 verified 금지
 discover: 공식 출처 없음/자격 모호 → needs-review
 fit: 진행 | 주의 | 재검토
-fact review: PASS | REVISE | BLOCK
+fact review (사용자 요청 시): PASS | REVISE | BLOCK
 final audit: PASS | REVISE | BLOCK
 ```
 
@@ -87,7 +87,7 @@ final audit: PASS | REVISE | BLOCK
 3. **수치 보존.** 원문 수치를 임의로 반올림하거나 개선 폭으로 재해석하지 않는다.
 4. **본인 기여 분리.** 팀 성과와 사용자의 직접 판단·수행을 구분한다.
 5. **공식 출처 우선.** 비공식 채용 사이트는 후보 발견에만 사용하며 마감·자격 확정은 공식 페이지로 한다.
-6. **검수와 수정 분리.** fact-reviewer와 final-red-team-reviewer는 파일을 수정하지 않는다. revision-editor만 검수 지적 범위에서 수정한다.
+6. **검수와 수정 분리.** 사용자가 요청해 실행한 fact-reviewer와 final-red-team-reviewer는 파일을 수정하지 않는다. revision-editor만 검수 지적 범위에서 수정한다. 기본 초안과 일반 수정은 별도 검수 릴레이 없이 진행한다.
 7. **평가자 독해 우선.** 내부 파일명·상태값·약어를 지원서에 그대로 옮기지 말고 지원자가 한 판단과 행동으로 설명한다.
 8. **개인정보 로컬 보관.** 이력서·성적표·실제 프로필·지원서·공고 진행 데이터는 `.gitignore` 대상이다.
 9. **`00_JD.md` 보존.** 공식 원문과 사용자 메모가 담긴 입력 파일은 후속 단계가 덮어쓰지 않는다.
@@ -101,4 +101,5 @@ final audit: PASS | REVISE | BLOCK
 - 제출용 본문은 파일당 하나의 `text` 코드 블록에 둔다.
 - 모든 수치와 검증 가능한 주장에는 `claim-id` 또는 원천 파일 위치를 추적표에 남긴다.
 - 글자수는 `node scripts/check-submission.mjs <파일> <제한>`으로 검사한다.
+- 사용자가 정확한 분량을 요구하지 않았다면 최대 글자수 이내로 쓰며 임의로 제한을 꽉 채우지 않는다.
 - 실제 제출 직전 `final-red-team-reviewer`와 민감정보 검사를 통과해야 `최종/`에 복사한다.

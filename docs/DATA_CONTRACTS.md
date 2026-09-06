@@ -47,14 +47,14 @@ companies/<회사>/<직무>/
 ├─ 02_직무적합성.md
 ├─ 03_소재매핑.md
 ├─ 04_초안/
-├─ 05_사실검수.md
+├─ 05_사실검수_<문항ID>.md (사용자 요청 시)
 ├─ 06_수정본/
-├─ 07_최종검수.md
+├─ 07_최종검수_<문항ID>.md
 └─ 최종/
 ```
 
 `00_JD.md`는 공식 원문 보관용이며 후속 에이전트가 수정하지 않는다. `최종/`은 final-audit가 `PASS`를 낸 경우에만 생성한다.
 
-`application-request.json`은 공식 확인 결과·문항·배정 claim을 묶는 로컬 입력이다. 사람용 `03_소재매핑.md`를 유지한다. `.work/apply/<run-id>/packet.json`의 입력/본문 hash가 다른 PASS를 재사용하지 않는다. 캘린더 등록은 회사별 JD/지원서 생성의 조건이 아니다.
+`application-request.json`은 공식 확인 결과·문항·배정 claim을 묶는 로컬 입력이다. 사람용 `03_소재매핑.md`를 유지한다. `.work/apply/<run-id>/packet.json`은 형식 검사된 검수 전 초안 체크포인트, 선택적 fact 검수, final 검수 기록을 구분한다. 초안 체크포인트는 PASS·`ready`가 아니며 입력/본문 hash가 다른 final PASS를 재사용하지 않는다. 캘린더 등록은 회사별 JD/지원서 생성의 조건이 아니다.
 
 원자료 처리 manifest(`state/intake-manifest.json`)는 검증된 receipt를 commit한 뒤에만 갱신한다. 원자료의 삭제/접근 실패는 개인 사실의 자동 삭제나 미확정 사실의 승격 근거가 되지 않는다.

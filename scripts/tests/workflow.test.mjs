@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createIntakePlan, commitIntakePlan } from '../lib/intake.mjs';
 import { buildDiscoveryQueue } from '../lib/discovery.mjs';
-import { prepare, recordReview } from '../apply-packet.mjs';
+import { checkpointDraft, prepare, recordReview } from '../apply-packet.mjs';
 import { digest } from '../lib/profile.mjs';
 import { collect, parseSearchPage } from '../collect-jasoseol.mjs';
 import { writeDiscoveryBrief } from '../lib/discovery-brief.mjs';
@@ -135,13 +135,18 @@ for (const careerType of ['new', 'experienced']) test(`${careerType}: 원자료 
   for (const q of packet.questions) {
     const draft = `\`\`\`text\n${q.claims[0].fact}\n\`\`\`\n근거: ${q.claimIds.join(', ')}\n`;
     put(`companies/${q.id}.md`, draft);
-    put(`companies/review-${q.id}.md`, `- 판정: PASS\n- 입력 해시: ${q.inputHash}\n- 본문 해시: ${digest(draft)}\n`);
-    recordReview(root, out, q.id, `companies/${q.id}.md`, `companies/review-${q.id}.md`);
+    checkpointDraft(root, out, q.id, `companies/${q.id}.md`);
   }
-  assert(prepare(root, requestFile, out, out).questions.every(q => q.action === 'reuse'));
+  assert(prepare(root, requestFile, out, out).questions.every(q => q.action === 'reuse-draft'));
+  for (const q of packet.questions) {
+    const draft = fs.readFileSync(path.join(root, `companies/${q.id}.md`), 'utf8');
+    put(`companies/final-${q.id}.md`, `- 검수 단계: final\n- 판정: PASS\n- 입력 해시: ${q.inputHash}\n- 본문 해시: ${digest(draft)}\n`);
+    recordReview(root, out, q.id, `companies/${q.id}.md`, `companies/final-${q.id}.md`, 'final');
+  }
+  assert(prepare(root, requestFile, out, out).questions.every(q => q.action === 'reuse-final'));
   fs.writeFileSync(pendingPath, fs.readFileSync(pendingPath, 'utf8').replace('팀 최종 발표에 참여했다.', '팀 최종 발표 준비에 참여했다.'));
   const changed = prepare(root, requestFile, out, out);
-  assert.equal(changed.questions.find(q => q.id === 'Q1').action, 'reuse');
+  assert.equal(changed.questions.find(q => q.id === 'Q1').action, 'reuse-final');
   assert.equal(changed.questions.find(q => q.id === 'Q2').action, 'draft');
   fs.appendFileSync(source, '\n새 검증 단계 추가');
   assert.equal((await createIntakePlan({ root })).summary.files.changed, 1);

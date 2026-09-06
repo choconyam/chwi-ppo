@@ -198,21 +198,45 @@ node scripts/apply-packet.mjs prepare --request companies/회사/직무/applicat
 node scripts/apply-packet.mjs prepare --request companies/회사/직무/application-request.json --previous .work/apply/current/packet.json --out .work/apply/current/packet.json
 ```
 
-packet.md는 문항별 글자수·작성 요청·배정된 검증 사실·역할 제한·JD를 담는다. 근거/문항 정보가 없는 항목은 blockedQuestions로 분리하고 나머지는 진행한다. 모두 보류면 입력 보완을 요청한다. action=reuse는 검수된 본문도 그대로 있을 때만 나온다. 다른 문항이나 무관한 경험을 다시 작성할 필요가 없다. 일반적인 소수 문항은 메인이 작성하며 복잡한 묶음만 draft-writer에 맡긴다.
+packet.md는 문항별 글자수·작성 요청·배정된 검증 사실·역할 제한·JD를 담는다. 근거/문항 정보가 없는 항목은 blockedQuestions로 분리하고 나머지는 진행한다. 모두 보류면 입력 보완을 요청한다. 일반적인 소수 문항은 메인이 작성하며 복잡한 묶음만 draft-writer에 맡긴다.
 
-사실 검수자는 작성자와 분리하고 실제 파일을 읽는다. 보고서 머리에 아래 항목을 기록한다.
+문항 상태는 다음처럼 구분한다.
+
+- `draft`: 새로 작성하거나 현재 입력에 맞게 기존 초안을 부분 수정한다. `previousDraft`가 있으면 참고하되 현재 근거를 다시 확인한다.
+- `reuse-draft`: 현재 입력에서 글자수·형식을 통과한 검수 전 초안이다. 직접 편집된 본문도 prepare가 다시 검사해 이 상태로 보존할 수 있다. PASS·`ready`·최종본이 아니다.
+- `reuse-final`: 현재 입력과 실제 본문 해시에 대한 독립 최종 검수 PASS가 남아 있다.
+
+초안을 `04_초안/`에 저장하고 문항별로 검사·체크포인트한다. 사용자가 정확한 분량을 요청하지 않았다면 제한 이내로 쓰며 예시의 1000자를 강제로 채우지 않는다.
+
+```powershell
+node scripts/check-submission.mjs companies/회사/직무/04_초안/Q1.md 1000
+node scripts/apply-packet.mjs checkpoint --packet .work/apply/current/packet.json --question Q1 --draft companies/회사/직무/04_초안/Q1.md
+```
+
+여기까지가 기본 `/apply`다. 검수 전 초안을 사용자에게 바로 전달하고, 일반 수정은 요청한 부분만 바꾼 뒤 같은 검사를 갱신한다. 근거가 부족하면 그 부분만 질문하거나 제외한다. fact-reviewer·revision-editor·자동 재검수는 기본 실행에 넣지 않는다.
+
+사용자가 중간 사실 검수를 명시적으로 요청하면 작성자와 분리된 fact-reviewer가 실제 파일을 읽고 문항별 보고서 머리에 다음 항목을 기록한다.
 
 ```text
+- 검수 단계: fact
 - 판정: PASS
 - 입력 해시: packet.json의 해당 문항 inputHash
 - 본문 해시: apply-packet.mjs hash --file <검수 본문>의 값
 ```
 
 ```powershell
-node scripts/apply-packet.mjs record --packet .work/apply/current/packet.json --question Q1 --draft companies/회사/직무/06_수정본/Q1.md --review companies/회사/직무/05_사실검수_Q1.md
+node scripts/apply-packet.mjs record --stage fact --packet .work/apply/current/packet.json --question Q1 --draft companies/회사/직무/04_초안/Q1.md --review companies/회사/직무/05_사실검수_Q1.md
 ```
 
-record는 실제 본문 글자수·claim 추적표·입력/본문 해시와 PASS를 대조한다. 의미 검수와 final-audit는 별도다. 문항·claim·JD·본문이 바뀌면 이전 검수 결과를 재사용하지 않는다.
+이 기록은 선택적 중간 검수이며 final PASS가 아니다. humanizer-ko는 사용자가 명시적으로 요청했을 때만 final 전에 적용하고, 바뀐 파일을 다시 검사·체크포인트한다.
+
+사용자가 내용 확정 뒤 `final` 또는 제출본 확정을 요청하면 별도 fact 검수를 추가하지 않고 final-red-team-reviewer(Sol XHigh)를 한 번 독립 실행한다. 현재 전체 문항의 사실·수치·역할·질문 충족·일관성을 함께 검수하고 문항별 보고서에 `검수 단계: final`과 현재 입력/실제 본문 해시를 남긴다.
+
+```powershell
+node scripts/apply-packet.mjs record --stage final --packet .work/apply/current/packet.json --question Q1 --draft companies/회사/직무/04_초안/Q1.md --review companies/회사/직무/07_최종검수_Q1.md
+```
+
+record는 실제 본문 글자수·claim 추적표·입력/본문 해시와 PASS를 대조한다. 문항·claim·JD·본문이 바뀌면 이전 final PASS를 재사용하지 않는다. REVISE면 revision-editor가 지적 범위만 별도 수정하고, 형식 검사 뒤 기존 지적과 변경 영향·문항 간 일관성을 한 번 재검수한다. 문제가 남으면 자동으로 반복하지 않고 보고한다. 현재 모든 문항에 final PASS가 있고 민감정보 검사도 통과해야 `최종/`에 복사하고 `ready`로 둘 수 있다. `submitted`는 사용자의 실제 제출 확인이 있어야 한다.
 
 ## 검증과 기록
 

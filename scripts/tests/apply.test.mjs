@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { buildPacket, prepare, recordReview, validateDraft } from '../apply-packet.mjs';
+import { buildPacket, checkpointDraft, prepare, recordReview, validateDraft } from '../apply-packet.mjs';
 import { digest, readClaims } from '../lib/profile.mjs';
 
 function fixture(t) {
@@ -35,19 +35,64 @@ test('자격·공식검증·문항 제한 미확인 및 근거없는 문항 차�
     assert.throws(() => buildPacket(root, copy));
   }
 });
-test('검수 PASS 및 본문/입력 해시가 맞을 때만 재사용, 수정 시 해당 문항 무효', t => {
+test('최초 초안은 형식 검사 체크포인트 뒤 검수 호출 없이 재사용', t => {
+  const { root, put, requestFile, request } = fixture(t);
+  const out = path.join(root, '.work/packet.json');
+  const packet = prepare(root, requestFile, out);
+  assert.equal(packet.questions[0].action, 'draft');
+  const draft = '```text\nAPI를 개발했습니다.\n```\n|근거|WORK-001|\n';
+  put('company/draft.md', draft);
+  checkpointDraft(root, out, 'Q1', 'company/draft.md');
+  const reused = prepare(root, requestFile, out, out).questions[0];
+  assert.equal(reused.action, 'reuse-draft');
+  assert.equal(reused.state, 'draft');
+  assert.equal(reused.finalReview, undefined);
+});
+test('사용자 본문 수정은 이전 PASS가 아니며 수정본 체크포인트도 최종으로 승격되지 않음', t => {
+  const { root, put, requestFile } = fixture(t);
+  const out = path.join(root, '.work/packet.json');
+  const packet = prepare(root, requestFile, out);
+  const draft = '```text\nAPI를 개발했습니다.\n```\n|근거|WORK-001|\n';
+  put('company/draft.md', draft);
+  put('company/final.md', `- 검수 단계: final\n- 판정: PASS\n- 입력 해시: ${packet.questions[0].inputHash}\n- 본문 해시: ${digest(draft)}\n`);
+  recordReview(root, out, 'Q1', 'company/draft.md', 'company/final.md', 'final');
+  assert.equal(prepare(root, requestFile, out, out).questions[0].action, 'reuse-final');
+  put('company/draft.md', draft.replace('개발했습니다', '설계했습니다'));
+  const changed = prepare(root, requestFile, out, out).questions[0];
+  assert.equal(changed.action, 'reuse-draft');
+  assert.equal(changed.finalReview, undefined);
+});
+test('final은 실제 검수 단계·입력·본문 해시의 PASS가 있어야 재사용', t => {
+  const { root, put, requestFile } = fixture(t);
+  const out = path.join(root, '.work/packet.json');
+  const packet = prepare(root, requestFile, out);
+  const draft = '```text\nAPI를 개발했습니다.\n```\n|근거|WORK-001|\n';
+  put('company/draft.md', draft);
+  checkpointDraft(root, out, 'Q1', 'company/draft.md');
+  put('company/review.md', `- 판정: PASS\n- 입력 해시: ${packet.questions[0].inputHash}\n- 본문 해시: ${digest(draft)}\n`);
+  recordReview(root, out, 'Q1', 'company/draft.md', 'company/review.md');
+  assert.equal(prepare(root, requestFile, out, out).questions[0].action, 'reuse-draft', '중간 사실 검수는 final이 아니다');
+  assert.throws(() => recordReview(root, out, 'Q1', 'company/draft.md', 'company/review.md', 'final'), /단계가 final/);
+  put('company/final.md', `- 검수 단계: final\n- 판정: PASS\n- 입력 해시: ${packet.questions[0].inputHash}\n- 본문 해시: ${digest(draft)}\n`);
+  recordReview(root, out, 'Q1', 'company/draft.md', 'company/final.md', 'final');
+  const final = prepare(root, requestFile, out, out).questions[0];
+  assert.equal(final.action, 'reuse-final');
+  assert.equal(final.state, 'final-reviewed');
+});
+test('문항·근거 입력 변경은 초안 체크포인트와 final PASS를 모두 재평가', t => {
   const { root, put, requestFile, request } = fixture(t);
   const out = path.join(root, '.work/packet.json');
   const packet = prepare(root, requestFile, out);
   const draft = '```text\nAPI를 개발했습니다.\n```\n|근거|WORK-001|\n';
   put('company/draft.md', draft);
-  put('company/review.md', `- 판정: PASS\n- 입력 해시: ${packet.questions[0].inputHash}\n- 본문 해시: ${digest(draft)}\n`);
-  recordReview(root, out, 'Q1', 'company/draft.md', 'company/review.md');
-  assert.equal(prepare(root, requestFile, out, out).questions[0].action, 'reuse');
-  put('company/draft.md', draft.replace('개발했습니다', '설계했습니다'));
-  assert.equal(prepare(root, requestFile, out, out).questions[0].action, 'draft');
+  put('company/final.md', `- 검수 단계: final\n- 판정: PASS\n- 입력 해시: ${packet.questions[0].inputHash}\n- 본문 해시: ${digest(draft)}\n`);
+  recordReview(root, out, 'Q1', 'company/draft.md', 'company/final.md', 'final');
   request.questions[0].prompt = '다른 질문'; put('company/request.json', JSON.stringify(request));
-  assert.throws(() => recordReview(root, out, 'Q1', 'company/draft.md', 'company/review.md'), /입력 근거가 변경/);
+  const changed = prepare(root, requestFile, out, out).questions[0];
+  assert.equal(changed.action, 'draft');
+  assert.equal(changed.previousDraft, 'company/draft.md');
+  assert.equal(changed.finalReview, undefined);
+  assert.throws(() => recordReview(root, out, 'Q1', 'company/draft.md', 'company/final.md', 'final'), /입력|본문과 일치/);
 });
 test('사용금지 승격·claim 수정·JD 수정은 캐시 입력을 변경, 무관 경험은 영향 없음', t => {
   const { root, put, request } = fixture(t);
