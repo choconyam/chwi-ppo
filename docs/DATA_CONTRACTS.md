@@ -21,7 +21,7 @@
 
 ## 공고 데이터
 
-발견 단계는 `.work/discover/<run-id>/snapshot.json`, `criteria.json`, `queue.json`을 사용한다. 포털 후보는 공식 검증 전이며 `data/opportunities.json`으로 바로 승격하지 않는다. 검색 조건은 신입/경력/미상과 검증된 관련 경력 범위를 포함한다. 자세한 입력·캐시 계약은 [WORKFLOW_RUNTIME.md](WORKFLOW_RUNTIME.md)를 따른다.
+발견 단계는 `.work/discover/<run-id>/snapshot.json`, `criteria.json`, `queue.json`을 사용한다. 포털 후보는 공식 검증 전이며 `data/opportunities.json`으로 바로 승격하지 않는다. 검색 조건은 신입/경력/미상과 검증된 관련 경력 범위를 포함한다. 자세한 입력·캐시 계약은 [discover 실행 계약](runtime/DISCOVER.md)을 따른다.
 
 `data/opportunities.json`은 에이전트와 React 화면이 공유하는 구조 데이터다. 사용자는 JSON을 직접 읽지 않아도 되며 캘린더에서 확인한다. 공개 저장소에는 `data/opportunities.example.json`만 포함한다.
 
@@ -55,6 +55,6 @@ companies/<회사>/<직무>/
 
 `00_JD.md`는 공식 원문 보관용이며 후속 에이전트가 수정하지 않는다. `최종/`은 final-audit가 `PASS`를 낸 경우에만 생성한다.
 
-`application-request.json`은 공식 확인 결과·문항·배정 claim을 묶는 로컬 입력이다. 사람용 `03_소재매핑.md`를 유지한다. `.work/apply/<run-id>/packet.json`은 형식 검사된 검수 전 초안 체크포인트, 선택적 fact 검수, final 검수 기록을 구분한다. 초안 체크포인트는 PASS·`ready`가 아니며 입력/본문 hash가 다른 final PASS를 재사용하지 않는다. 캘린더 등록은 회사별 JD/지원서 생성의 조건이 아니다.
+`application-request.json`은 공식 확인 결과·문항·배정 claim을 묶는 로컬 입력이다. 사람용 `03_소재매핑.md`를 유지한다. `.work/apply/<run-id>/packet.json`은 검증용 입력 전문/hash와 체크포인트·선택 fact·final 기록을 보존하고, 모델용 `packet.md`는 JD 분석·claim·표현 제한을 중복 없이 제공한다. checkpoint는 형식·글자수·claim 추적을 함께 검사한다. 초안 체크포인트는 PASS·`ready`가 아니며 현재 입력·본문·보고서 hash가 유효한 final PASS만 재사용한다. 자세한 명령은 [apply 실행 계약](runtime/APPLY.md)을 따른다.
 
 원자료 처리 manifest(`state/intake-manifest.json`)는 검증된 receipt를 commit한 뒤에만 갱신한다. 원자료의 삭제/접근 실패는 개인 사실의 자동 삭제나 미확정 사실의 승격 근거가 되지 않는다.

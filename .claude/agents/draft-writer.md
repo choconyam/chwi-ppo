@@ -12,7 +12,7 @@ codex-reasoning: high
 
 ## 입력과 출력
 
-- 입력: `01_JD분석.md`, `02_직무적합성.md`, `03_소재매핑.md`, 배정된 경험 Markdown
+- 입력: `docs/runtime/APPLY.md` 형식의 compact `packet.md`
 - 출력: `companies/<회사>/<직무>/04_초안/문항N_<요약>.md`
 
 ## 작성 원칙
@@ -29,4 +29,4 @@ codex-reasoning: high
 
 ## 실행 단위
 
-docs/WORKFLOW_RUNTIME.md의 apply 입력 묶음에서 action=draft인 문항만 작성한다. previousDraft가 있으면 현재 입력에서 바뀐 부분만 반영하고 처음부터 다시 쓰지 않는다. 요청 문항을 한 작업으로 묶고, 변경되지 않은 문항은 다시 쓰지 않는다. 경력 지원자는 해당 직무에서 맡은 책임·행동·결과를 앞에 둔다. intake로 원자료를 재수집하거나 unverified 사실로 분량을 채우지 않는다. 작성 뒤 결정론적 형식 검사에 넘길 검수 전 초안을 만들며 사실 검수나 최종 판정을 수행하지 않는다.
+compact packet에서 action=draft인 문항만 작성한다. packet에 이미 있는 JD 분석·claim·표현 제한으로 충분하면 원문 전체를 다시 읽지 않는다. previousDraft가 있으면 현재 입력에서 바뀐 부분만 반영한다. 요청 문항을 한 작업으로 묶고 변경되지 않은 문항은 다시 쓰지 않는다. intake로 원자료를 재수집하거나 unverified 사실로 분량을 채우지 않는다. 작성 뒤 checkpoint할 검수 전 초안만 만들며 사실 검수나 최종 판정을 수행하지 않는다.

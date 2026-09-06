@@ -105,6 +105,15 @@ function checkedReview(root, question, review, stage) {
   } catch { return null; }
 }
 
+function checkedReviewForDraft(root, question, review, stage, draftHash) {
+  if (review?.status !== 'PASS' || review.stage !== stage || review.inputHash !== question.inputHash
+    || review.draftHash !== draftHash) return null;
+  try {
+    const report = fs.readFileSync(localPath(root, review.report), 'utf8');
+    return digest(report) === review.reportHash ? review : null;
+  } catch { return null; }
+}
+
 function legacyFactReview(root, question, cached) {
   const review = cached?.review;
   if (cached?.inputHash !== question.inputHash || review?.status !== 'PASS') return null;
@@ -159,15 +168,27 @@ export function prepare(root, requestFile, outputFile, previousFile) {
     }
   }
   write(outputFile, `${JSON.stringify(packet, null, 2)}\n`);
-  const markdown = ['# 지원서 작성 입력', '', '이 자료에는 배정된 검증 사실만 포함합니다. 원자료 재수집은 필요하지 않습니다.', '',
-    ...packet.blockedQuestions.map(q => `- ${q.id} 보류: ${q.reason}`), '',
-    ...packet.documents.flatMap(doc => [`## ${doc.key}: ${doc.file}`, '', doc.content, '']),
+  const selectedClaims = new Map();
+  for (const question of packet.questions) for (const claim of question.claims) selectedClaims.set(claim.id, claim);
+  const cautionsByFile = new Map();
+  for (const claim of selectedClaims.values()) {
+    if (claim.cautions?.trim()) cautionsByFile.set(claim.file, claim.cautions.trim());
+  }
+  const analysis = packet.documents.find(doc => doc.key === 'analysis');
+  const documentLabels = { jd: '공식 JD', analysis: '직무 분석', fit: '적합도 판단' };
+  const markdown = ['# 지원서 작성 입력', '', '배정된 검증 사실의 공통 사전과 문항별 claim-id 매핑입니다. 전체 원문은 필요할 때 아래 경로에서 직접 엽니다.', '',
+    '## 입력 문서', '', ...packet.documents.map(doc => `- ${documentLabels[doc.key] ?? doc.key}: ${doc.file}`), '',
+    ...(analysis ? ['## 작성에 필요한 직무 분석', '', analysis.content.trim(), ''] : []),
+    ...(packet.blockedQuestions.length ? ['## 보류 문항', '', ...packet.blockedQuestions.map(q => `- ${q.id}: ${q.reason}`), ''] : []),
+    '## 공통 verified claim 사전', '',
+    ...[...selectedClaims.values()].flatMap(c => [`### ${c.id}`, `- 사실: ${c.fact}`, `- 근거: ${c.evidence}`, `- 정본: ${c.file}:${c.line}`, '']),
+    ...(cautionsByFile.size ? ['## 경험별 표현 제한', '', ...[...cautionsByFile].flatMap(([file, cautions]) => [`### ${file}`, cautions, ''])] : []),
     ...packet.questions.flatMap(q => [`## ${q.id}: ${{ 'reuse-final': '최종 검수 PASS 본문 재사용', 'reuse-draft': '검수 전 초안 재사용', draft: '초안 작성·수정 필요' }[q.action]}`, '',
-      `- 문항: ${q.prompt}`, `- 원문 위치: ${q.source}`, `- 제한: ${q.limit}자`, `- 입력 해시: ${q.inputHash}`, '',
+      `- 문항: ${q.prompt}`, `- 원문 위치: ${q.source}`, `- 제한: ${q.limit}자`, `- 입력 해시: ${q.inputHash}`,
+      `- 배정 claim-id: ${q.claims.map(c => c.id).join(', ')}`, '',
       ...(q.draftCheckpoint?.file ? [`- 현재 초안: ${q.draftCheckpoint.file}`, ''] : []),
       ...(q.previousDraft ? [`- 기존 초안 참고: ${q.previousDraft} (현재 입력 기준 재검토 필요)`, ''] : []),
-      ...(q.instructions ? [`- 작성 요청: ${q.instructions}`, ''] : []),
-      ...q.claims.flatMap(c => [`### ${c.id}`, `- 사실: ${c.fact}`, `- 근거: ${c.evidence}`, `- 정본: ${c.file}:${c.line}`, `- 표현 범위 참고(새 주장으로 사용하지 않음):\n${c.cautions}`, ''])])].join('\n');
+      ...(q.instructions ? [`- 작성 요청: ${q.instructions}`, ''] : [])])].join('\n');
   write(outputFile.replace(/\.json$/, '') + '.md', markdown);
   return packet;
 }
@@ -178,13 +199,27 @@ export function checkpointDraft(root, packetFile, questionId, draftRelative) {
   const draft = fs.readFileSync(localPath(root, draftRelative), 'utf8');
   const result = validateDraft(draft, question);
   const draftHash = digest(draft);
+  const finalReview = checkedReviewForDraft(root, question, question.finalReview, 'final', draftHash);
+  const legacyFact = question.review?.status === 'PASS' ? {
+    ...question.review,
+    stage: 'fact',
+    inputHash: question.inputHash,
+  } : null;
+  const factReview = checkedReviewForDraft(root, question, question.factReview ?? legacyFact, 'fact', draftHash);
   question.draftCheckpoint = { status: 'checked', inputHash: question.inputHash, file: draftRelative, draftHash,
     characters: result.characters, references: result.references };
   delete question.factReview;
   delete question.finalReview;
   delete question.review;
-  question.state = 'draft';
-  question.action = 'reuse-draft';
+  if (factReview) question.factReview = { ...factReview, draft: draftRelative };
+  if (finalReview) {
+    question.finalReview = { ...finalReview, draft: draftRelative };
+    question.state = 'final-reviewed';
+    question.action = 'reuse-final';
+  } else {
+    question.state = factReview ? 'fact-reviewed-draft' : 'draft';
+    question.action = 'reuse-draft';
+  }
   write(packetFile, `${JSON.stringify(packet, null, 2)}\n`);
   return question;
 }
@@ -238,8 +273,10 @@ function main() {
     const packet = prepare(root, localPath(root, options.request), localPath(root, options.out), options.previous && localPath(root, options.previous));
     console.log(`진행 문항 ${packet.questions.length}개: 최종 PASS 재사용 ${packet.questions.filter(q => q.action === 'reuse-final').length}, 검수 전 초안 재사용 ${packet.questions.filter(q => q.action === 'reuse-draft').length}, 초안 작성 ${packet.questions.filter(q => q.action === 'draft').length}, 보류 ${packet.blockedQuestions.length}`);
   } else if (command === 'checkpoint') {
-    checkpointDraft(root, localPath(root, options.packet), options.question, options.draft);
-    console.log('글자수·형식을 통과한 검수 전 초안을 기록했습니다. PASS 또는 최종본 상태는 아닙니다.');
+    const question = checkpointDraft(root, localPath(root, options.packet), options.question, options.draft);
+    const status = question.action === 'reuse-final' ? '최종 검수 PASS 유지'
+      : question.factReview ? '중간 사실 검수 PASS 유지 (최종 검수 전)' : '검수 전 초안';
+    console.log(`초안 체크포인트: ${question.draftCheckpoint.characters}/${question.limit}자, 상태: ${status}`);
   } else if (command === 'record') {
     const stage = options.stage ?? 'fact';
     recordReview(root, localPath(root, options.packet), options.question, options.draft, options.review, stage);

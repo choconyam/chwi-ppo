@@ -9,6 +9,8 @@ description: 로컬 공고 데이터의 마감·지원 가능·작성·검수·�
 
 `data/opportunities.json`을 읽어 다음을 보여 준다.
 
+단순 조회는 현재 기록만 읽고 동기화·생성·별도 모델 재감사를 실행하지 않는다.
+
 - 7일 안에 마감되는 지원 가능 공고
 - 공식 확인이 필요한 날짜·자격
 - 작성 중, 검수 대기, 제출 준비, 제출 완료 상태
@@ -33,9 +35,10 @@ discovered → analyzing → writing → review → ready → submitted
 
 ## 동기화
 
-1. `node scripts/validate-opportunities.mjs`
-2. `node scripts/sync-dashboard-data.mjs`
-3. `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/generate-dashboard.ps1`로 설치 없이 열리는 읽기 전용 HTML을 갱신한다.
-4. 결과와 남은 경고를 사용자에게 보고한다.
+1. `node scripts/sync-dashboard-data.mjs`로 registry 검증과 데이터 동기화를 함께 수행한다.
+2. `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/generate-dashboard.ps1`로 읽기 전용 HTML을 갱신한다.
+3. 결과와 남은 경고를 사용자에게 보고한다.
+
+`node scripts/validate-opportunities.mjs`는 스키마 오류를 따로 진단할 때만 단독 실행하며 기본 동기화 전에 중복 실행하지 않는다. 세부 계약이 필요할 때만 [track 실행 계약](../../../docs/runtime/TRACK.md)을 읽는다.
 
 이 스킬은 로컬 상태만 관리한다. 외부 지원서 제출·취소·메시지 전송은 하지 않는다.
