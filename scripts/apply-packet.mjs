@@ -46,7 +46,9 @@ export function buildPacket(root, request) {
       assert(claim?.status === '검증됨', `${question.id}: ${id}는 검증된 claim이 아닙니다.`);
       return claim;
     });
-    const inputHash = digest(JSON.stringify({ question, claims: selected, documents: documents.map(d => d.hash),
+    // Full source hashes and line numbers remain in the packet for provenance, not reuse decisions.
+    const relevantClaims = selected.map(({ sourceHash, line, ...claim }) => claim);
+    const inputHash = digest(JSON.stringify({ question, claims: relevantClaims, documents: documents.map(d => d.hash),
       official: { status: request.official.status, url: request.official.url }, eligibility: request.eligibility, fit: request.fit, format: request.format ?? '' }));
       questions.push({ ...question, claims: selected, inputHash });
     } catch (error) {

@@ -16,12 +16,16 @@ export function readClaims(root) {
   const errors = [];
   for (const file of files) {
     const content = fs.readFileSync(file, 'utf8').replaceAll('\r\n', '\n');
-    const matches = [...content.matchAll(/^###\s+([A-Z][A-Z0-9-]*-\d{3,})\s*\n([\s\S]*?)(?=^#{1,3}\s|$(?![\s\S]))/gm)];
+    const blocks = /^###\s+([A-Z][A-Z0-9-]*-\d{3,})\s*\n([\s\S]*?)(?=^#{1,3}\s|$(?![\s\S]))/gm;
+    const matches = [...content.matchAll(blocks)];
+    // Preserve shared context/constraints, but do not invalidate other claims when one changes.
+    const contextHash = digest(content.replace(blocks, '').trim());
     for (const match of matches) {
       const field = key => match[2].match(new RegExp(`^- ${key}:\\s*(.+)$`, 'm'))?.[1]?.trim();
       const claim = { id: match[1], fact: field('사실'), evidence: field('근거'), status: field('상태'),
         file: path.relative(root, file).replaceAll('\\', '/'), line: content.slice(0, match.index).split('\n').length,
         sourceHash: digest(content),
+        claimHash: digest(match[2].trim()), contextHash,
         cautions: [
           ...content.matchAll(/^- (?:본인 역할|현재 상태):.*$/gm),
         ].map(m => m[0]).join('\n') + '\n' + (content.match(/^## 사용하면 안 되는 표현\s*\n([\s\S]*?)(?=^## |$(?![\s\S]))/m)?.[1]?.trim() ?? '') };

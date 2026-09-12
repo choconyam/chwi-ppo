@@ -33,11 +33,13 @@ discovered → analyzing → writing → review → ready → submitted
 
 마감·자격·공식 URL을 바꿀 때는 공식 근거와 확인일이 필요하다. 근거가 없으면 `needs-review`로 바꾼다.
 
-## 동기화
+## 동기화와 완료
+
+실제 변경이 있을 때만 다음 절차를 실행한다. 조회나 이미 반영된 요청은 재생성하지 않는다.
 
 1. `node scripts/sync-dashboard-data.mjs`로 registry 검증과 데이터 동기화를 함께 수행한다.
 2. `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/generate-dashboard.ps1`로 읽기 전용 HTML을 갱신한다.
-3. 결과와 남은 경고를 사용자에게 보고한다.
+3. 각 명령의 성공 여부와 생성 결과에서 요청한 항목의 값이 반영됐는지 확인한 뒤 보고한다. 실패하면 해당 원인을 해결하고 관련 명령만 재실행한다. 생성 실패를 완료로 보고하거나 별도 모델 전체 검수를 붙이지 않는다.
 
 `node scripts/validate-opportunities.mjs`는 스키마 오류를 따로 진단할 때만 단독 실행하며 기본 동기화 전에 중복 실행하지 않는다. 세부 계약이 필요할 때만 [track 실행 계약](../../../docs/runtime/TRACK.md)을 읽는다.
 

@@ -179,6 +179,61 @@ test('사용금지 승격·claim 수정·JD 수정은 캐시 입력을 변경, �
   fs.writeFileSync(file, text); put('company/jd.md', '변경된 JD');
   assert.notEqual(buildPacket(root, request).questions[0].inputHash, before);
 });
+test('같은 파일의 미배정 claim 수정·추가·행 이동은 기존 final PASS를 보존', t => {
+  const { root, put, requestFile } = fixture(t);
+  const out = path.join(root, '.work/packet.json');
+  const packet = prepare(root, requestFile, out);
+  const before = packet.questions[0];
+  const draft = '```text\nAPI를 개발했습니다.\n```\n근거: WORK-001\n';
+  put('company/draft.md', draft);
+  put('company/final.md', `- 검수 단계: final\n- 판정: PASS\n- 입력 해시: ${before.inputHash}\n- 본문 해시: ${digest(draft)}\n`);
+  recordReview(root, out, 'Q1', 'company/draft.md', 'company/final.md', 'final');
+  const file = path.join(root, 'profile/experiences/work.md');
+  const original = fs.readFileSync(file, 'utf8');
+  const added = '### WORK-003\n- 사실: 별도 프로젝트의 일정표를 정리했다.\n- 근거: 별도 업무일지\n- 상태: 검증됨\n\n';
+  fs.writeFileSync(file, original.replace('처리 시간이 줄었다.', '다른 기능의 처리 시간이 줄었다.').replace('### WORK-001', `${added}### WORK-001`));
+  assert.equal(checkpointDraft(root, out, 'Q1', 'company/draft.md').finalReview?.status, 'PASS');
+  const after = prepare(root, requestFile, out, out).questions[0];
+  assert.equal(after.action, 'reuse-final');
+  assert.equal(after.inputHash, before.inputHash);
+  assert.notEqual(after.claims[0].line, before.claims[0].line);
+  assert.notEqual(after.claims[0].sourceHash, before.claims[0].sourceHash, '전체 파일 변경 이력은 보존한다');
+});
+test('선택 claim과 공유 역할·제한·문맥 변경은 입력 해시를 바꾼다', t => {
+  const { root, request } = fixture(t);
+  const before = buildPacket(root, request).questions[0].inputHash;
+  const file = path.join(root, 'profile/experiences/work.md');
+  const original = fs.readFileSync(file, 'utf8');
+  const changes = [
+    text => text.replace('API를 개발했다.', 'API 개발을 보조했다.'),
+    text => text.replace('업무일지 2쪽', '정정된 업무일지 4쪽'),
+    text => text.replace('- 본인 역할: API 개발', '- 본인 역할: API 테스트 지원'),
+    text => text.replace('팀 운영 성과를 단독 성과로 쓰지 않는다.', '단독 개발로 표현하지 않는다.'),
+    text => `${text}\n## 프로젝트 배경\n전체 구현은 다른 팀원이 담당했다.\n`,
+    text => text.replace('- 근거: 업무일지 2쪽', '- 근거: 업무일지 2쪽\n- 추가 제한: 유지보수만 담당'),
+  ];
+  for (const change of changes) {
+    fs.writeFileSync(file, change(original));
+    assert.notEqual(buildPacket(root, request).questions[0].inputHash, before);
+  }
+});
+test('같은 경험 파일에서도 변경 claim을 사용한 문항만 다시 작성 대상으로 둔다', t => {
+  const { root, put, request, requestFile } = fixture(t);
+  const file = path.join(root, 'profile/experiences/work.md');
+  fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace('상태: 확인 필요', '상태: 검증됨'));
+  request.questions.push({ ...request.questions[0], id: 'Q2', claimIds: ['WORK-002'] });
+  put('company/request.json', JSON.stringify(request));
+  const out = path.join(root, '.work/packet.json');
+  const packet = prepare(root, requestFile, out);
+  for (const question of packet.questions) {
+    put(`company/${question.id}.md`, `\`\`\`text\n${question.claims[0].fact}\n\`\`\`\n근거: ${question.claimIds[0]}\n`);
+    checkpointDraft(root, out, question.id, `company/${question.id}.md`);
+  }
+  fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace('처리 시간이 줄었다.', '처리 시간 변화는 재측정 중이다.'));
+  const changed = prepare(root, requestFile, out, out);
+  assert.equal(changed.questions.find(q => q.id === 'Q1').action, 'reuse-draft');
+  assert.equal(changed.questions.find(q => q.id === 'Q2').action, 'draft');
+});
 test('누락/중복 claim·제한 초과·미배정 인용을 차단', t => {
   const { root, request, put } = fixture(t);
   const q = buildPacket(root, request).questions[0];
