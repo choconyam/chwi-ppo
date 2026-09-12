@@ -1,6 +1,6 @@
 # 취뽀 (chwi-ppo)
 
-![version](https://img.shields.io/badge/version-v1.1.0-blue) ![license](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-orange) ![Codex](https://img.shields.io/badge/Codex-%2Fintake%20%2Fdiscover%20%2Fapply%20%2Ftrack-black) ![Claude Code](https://img.shields.io/badge/Claude%20Code-%2Fintake%20%2Fdiscover%20%2Fapply%20%2Ftrack-D97757)
+![version](https://img.shields.io/badge/version-v1.1.1-blue) ![license](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-orange) ![Codex](https://img.shields.io/badge/Codex-%2Fintake%20%2Fdiscover%20%2Fapply%20%2Ftrack-black) ![Claude Code](https://img.shields.io/badge/Claude%20Code-%2Fintake%20%2Fdiscover%20%2Fapply%20%2Ftrack-D97757)
 
 <p align="center">
   <img src="assets/chwi-ppo-cover.png" alt="chwi-ppo 안내판을 든 벌 캐릭터" width="100%">
@@ -13,6 +13,8 @@
 **공식 JD와 검증된 본인 경험만 지원서 근거로 사용하며, 확인되지 않은 내용은 만들지 않습니다.**
 
 처음이라면 [다른 사용자를 위한 시작 안내](docs/USER_GUIDE.md)를 따라 하면 됩니다. Codex와 Claude Code 모두 `/intake`, `/discover`, `/apply`, `/track`으로 호출합니다.
+
+현재 대화에서 선택한 모델이 기본 작업을 직접 처리합니다. 큰 독립 작업만 나누어 맡기며, 별도 검수는 사용자가 요청할 때만 실행합니다.
 
 ## 빠른 시작
 
@@ -29,7 +31,15 @@ cd chwi-ppo
 
 실행 준비물은 **Codex 또는 Claude Code, Node.js 20.19 이상**입니다. `node --version`으로 확인하세요. Node.js는 변경 감지·형식 검사 스크립트에 필요하며, 취뽀를 npm 패키지로 설치할 필요는 없습니다. Windows에서 상황판만 열 때는 Node.js가 필요 없습니다.
 
-## 1.1.0 주요 변경
+## 1.1.1 주요 변경
+
+- **불필요한 작업 축소**: 간단한 작업은 현재 모델이 직접 처리하고, 이미 읽은 지침과 근거를 반복해서 읽지 않도록 실행 기준을 정리했습니다.
+- **부분 수정 바로 처리**: 경험의 기간 정정이나 지원서 문장 수정은 해당 부분부터 처리합니다. 지원서에 사용하지 않은 경험의 변경 때문에 기존 검수 결과가 불필요하게 무효화되지 않도록 개선했습니다.
+- **요청한 범위에 집중**: 공고 링크 하나를 주면 해당 공고부터 확인합니다. 일정 조회만 요청하면 데이터를 다시 생성하지 않습니다.
+
+시간·토큰 절감률은 아직 측정하지 않았습니다. 자세한 내용은 [1.1.1 변경 내역](docs/releases/v1.1.1.md)을 확인하세요.
+
+### 1.1.0에서 추가된 기능
 
 - **자료 정리 이어하기**: README·요약부터 작은 단위로 읽고 결과를 저장합니다. 중단되면 완료된 결과를 재사용하고, 실패한 자료만 따로 처리합니다.
 - **공고 누락 방지 보완**: 검색한 목록과 미처리 후보를 기록하고, 세부 직무·자격을 확인하지 못한 공고는 추가 확인 대상으로 남깁니다.
@@ -71,6 +81,8 @@ Claude Code: /intake C:\내자료
 
 `intake`는 처음 한 번, 그리고 개인 자료가 바뀌었을 때만 다시 실행합니다. 등록된 자료의 변경분만 읽고 해당 경험을 갱신합니다. 중간에 멈췄다면 같은 경로로 다시 요청하면 완료된 소단위 결과는 재사용하고 미완료 부분부터 이어갑니다. 프로젝트는 README·결과 보고서를 먼저 보고, 코드와 긴 로그는 사실 확인에 필요한 부분만 추가로 읽습니다.
 
+“이 프로젝트 시작월은 3월이야”처럼 간단한 정정은 해당 경험만 갱신하며, 전체 자료 정리를 다시 시작하지 않습니다.
+
 경력자는 경력기술서·담당 업무·근무 기간을 함께 정리합니다. 불확실한 사실이 있어도 나머지 확인된 경험은 검색과 작성에 사용할 수 있습니다.
 
 ## 2. 맞춤 공고 찾기와 JD 분석
@@ -81,6 +93,8 @@ Claude Code: /discover 반도체·전자·AI 신입, 수도권·충청권
 ```
 
 `/discover`는 사용자가 검색을 요청할 때 실행합니다. 예를 들어 “이번 달 자소설닷컴 공고 중 내 경험에 맞는 대기업을 찾아줘” 또는 “내 경력으로 지원할 수 있는 데이터 직무를 찾아줘”라고 말하면 됩니다.
+
+지원하려는 공고가 있다면 `/discover 공고URL`처럼 링크만 주어도 됩니다. 이때는 다른 기업을 새로 찾지 않고 해당 공고의 업무·자격과 본인 경험의 적합도부터 확인합니다.
 
 1. 자소설닷컴 등 채용 목록에서 해당 기간의 후보 수집
 2. 개인 프로필과 기업 규모·신입/경력·희망 조건을 바탕으로 기업과 세부 직무 선별
@@ -167,7 +181,7 @@ React 화면 자체를 개발할 때만 Node.js 20.19 이상과 `run-dashboard-d
 │  └─ skills/
 ├─ .agents/skills/          Codex 저장소 로컬 스킬
 ├─ .codex/agents/           Codex 역할별 서브에이전트
-├─ .codex/config.toml       Codex 모델·동시 실행 기본값
+├─ .codex/config.toml       Codex 에이전트 실행 설정
 ├─ profile/                 사람용 개인 경험 Markdown
 ├─ companies/               회사·직무별 로컬 산출물
 ├─ data/                    공고 구조 데이터
