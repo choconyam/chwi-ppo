@@ -18,9 +18,10 @@
 
 ## 빠른 시작
 
+### 설치
+
 1. [GitHub 저장소](https://github.com/choconyam/chwi-ppo)에서 `Code → Download ZIP`을 선택하고 압축을 풉니다.
-2. `AGENTS.md`가 있는 최상위 폴더를 Codex 또는 Claude Code에서 엽니다.
-3. `/intake C:\본인자료폴더`를 입력합니다.
+2. 압축을 푼 폴더에 `AGENTS.md`와 `README.md`가 있으면 설치가 끝난 것입니다.
 
 Git을 사용한다면 ZIP 다운로드 대신 다음 명령으로 받습니다.
 
@@ -29,7 +30,14 @@ git clone https://github.com/choconyam/chwi-ppo.git
 cd chwi-ppo
 ```
 
-실행 준비물은 **Codex 또는 Claude Code, Node.js 20.19 이상**입니다. `node --version`으로 확인하세요. Node.js는 변경 감지·형식 검사 스크립트에 필요하며, 취뽀를 npm 패키지로 설치할 필요는 없습니다. Windows에서 상황판만 열 때는 Node.js가 필요 없습니다.
+설치 단계에서는 npm 패키지 설치, 빌드, 테스트, `/intake`, 전체 저장소 분석을 실행할 필요가 없습니다. Node.js도 저장소를 받는 데는 필요하지 않습니다.
+
+### 첫 사용
+
+1. `AGENTS.md`가 있는 최상위 폴더를 Codex 또는 Claude Code에서 엽니다.
+2. 개인 자료를 정리할 준비가 되었을 때 `/intake C:\본인자료폴더`를 입력합니다.
+
+실제 워크플로의 변경 감지·형식 검사 스크립트에는 **Node.js 20.19 이상**이 필요합니다. `node --version`으로 확인하세요. 취뽀 자체를 npm 패키지로 설치할 필요는 없으며, Windows에서 상황판만 열 때는 Node.js가 필요 없습니다.
 
 ## 1.1.1 주요 변경
 
