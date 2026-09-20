@@ -7,6 +7,7 @@
 | 작업 | 필요한 실행 계약 |
 |---|---|
 | 원자료 최초 정리·증분 갱신 | [intake](runtime/INTAKE.md) |
+| 경험 Markdown 형식·유형별 구조·경험 검색 | [경험 정본](runtime/EXPERIENCE.md) |
 | 공고 목록 수집·공식 JD 검증·추천 | [discover](runtime/DISCOVER.md) |
 | JD 문장별 요구·경험 연결·증분 누락 검사 | [JD 매칭](runtime/JD_MATCHING.md) |
 | 지원서 소재 매핑·초안·선택 검수·제출 전 final | [apply](runtime/APPLY.md) |

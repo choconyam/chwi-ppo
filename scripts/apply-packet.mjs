@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { digest, readClaims } from './lib/profile.mjs';
+import { digest, readClaims, readExperiences } from './lib/profile.mjs';
 import { checkedMap, mapMarker } from './lib/jd-map.mjs';
 
 const json = file => JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -206,7 +206,11 @@ export function prepare(root, requestFile, outputFile, previousFile) {
     ...(analysisText ? ['## 작성에 필요한 직무 분석·경험 연결', '', analysisText.trim(), ''] : []),
     ...(packet.blockedQuestions.length ? ['## 보류 문항', '', ...packet.blockedQuestions.map(q => `- ${q.id}: ${q.reason}`), ''] : []),
     '## 공통 verified claim 사전', '',
-    ...[...selectedClaims.values()].flatMap(c => [`### ${c.id}`, `- 사실: ${c.fact}`, `- 근거: ${c.evidence}`, `- 정본: ${c.file}:${c.line}`, '']),
+    ...[...selectedClaims.values()].flatMap(c => [`### ${c.id}`, `- 사실: ${c.fact}`,
+      ...(c.contribution ? [`- 본인 기여: ${c.contribution}`] : []),
+      ...(c.method ? [`- 방법·도구: ${c.method}`] : []),
+      ...(c.outcome ? [`- 결과·상태: ${c.outcome}`] : []),
+      `- 근거: ${c.evidence}`, `- 정본: ${c.file}:${c.line}`, '']),
     ...(cautionsByFile.size ? ['## 경험별 표현 제한', '', ...[...cautionsByFile].flatMap(([file, cautions]) => [`### ${file}`, cautions, ''])] : []),
     ...packet.questions.flatMap(q => [`## ${q.id}: ${{ 'reuse-final': '최종 검수 PASS 본문 재사용', 'reuse-draft': '검수 전 초안 재사용', draft: '초안 작성·수정 필요' }[q.action]}`, '',
       `- 문항: ${q.prompt}`, `- 원문 위치: ${q.source}`, `- 제한: ${q.limit}자`, `- 입력 해시: ${q.inputHash}`,
@@ -282,18 +286,31 @@ export function recordReview(root, packetFile, questionId, draftRelative, report
   return question;
 }
 
+const summarize = (value, max = 60) => {
+  const text = (value ?? '').replace(/\s+/g, ' ').trim();
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+};
+
 export function catalog(root, options = {}) {
   const all = [...readClaims(root).values()].filter(c => c.status === '검증됨');
+  const experiences = readExperiences(root);
   assert(!options.mode || ['index', 'claims'].includes(options.mode), 'catalog mode는 index 또는 claims입니다.');
   const files = options.files?.split(',').map(s => s.trim());
   const query = options.query?.toLowerCase();
-  const selected = all.filter(c => (!files || files.includes(c.file))
-    && (!query || `${c.id} ${c.fact} ${c.file}`.toLowerCase().includes(query)));
+  // 사실 문장에 없는 도구·방법·산출물도 경험 문맥에서 찾을 수 있게 한다.
+  const haystack = claim => [claim.id, claim.fact, claim.file, claim.type, claim.contribution, claim.method,
+    claim.outcome, experiences.get(claim.file)?.title, experiences.get(claim.file)?.type,
+    experiences.get(claim.file)?.searchText].filter(Boolean).join(' ').toLowerCase();
+  const selected = all.filter(c => (!files || files.includes(c.file)) && (!query || haystack(c).includes(query)));
   const rows = options.mode === 'index'
     ? [...new Set(selected.map(c => c.file))].map(file => {
-      const title = fs.readFileSync(localPath(root, file), 'utf8').match(/^# (.+)$/m)?.[1]?.trim() ?? file;
-      return `- ${file}: ${title} (검증 claim ${selected.filter(c => c.file === file).length}개)`;
-    }) : selected.map(c => `- ${c.id}: ${c.fact} (${c.file}:${c.line})`);
+      const meta = experiences.get(file);
+      const detail = [meta?.type && `유형 ${meta.type}`, meta?.role && `역할 ${summarize(meta.role)}`,
+        `검증 claim ${selected.filter(c => c.file === file).length}개`].filter(Boolean);
+      return `- ${file}: ${meta?.title || file} (${detail.join(' / ')})`;
+    }) : selected.map(c => [`- ${c.id}`, c.type ? ` [${c.type}]` : '', `: ${c.fact}`,
+      c.method ? ` / 방법·도구: ${c.method}` : '', c.outcome ? ` / 결과·상태: ${c.outcome}` : '',
+      ` (${c.file}:${c.line})`].join(''));
   const offset = Number(options.offset ?? 0);
   const limit = Number(options.limit ?? rows.length);
   assert(Number.isInteger(offset) && offset >= 0 && Number.isInteger(limit) && limit >= 0, 'offset/limit은 0 이상의 정수입니다.');
