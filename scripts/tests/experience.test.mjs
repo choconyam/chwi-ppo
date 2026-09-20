@@ -267,6 +267,32 @@ test('연결된 claim의 v2 필드 변경은 해당 요구만 재검토 대상�
   assert.deepEqual(compareMap(inspectMap(root, options), before).changed, ['JD-001', 'JD-002']);
 });
 
+test('원자료 절 변경은 매칭·문항을 재검토시키지 않지만 다른 서술 변경은 파일 전체를 재검토시킨다', t => {
+  const { root, put, get, options, record } = matchingFixture(t);
+  record();
+  const before = inspectMap(root, options);
+  const file = 'profile/experiences/project.md';
+  const request = {
+    version: 1, official: { status: 'verified', url: 'https://example.com/jobs/1', checkedAt: '2026-09-01T00:00:00Z' },
+    eligibility: { status: 'eligible' }, fit: { decision: 'proceed' },
+    documents: { jd: options.jd, analysis: options.analysis, fit: options.fit }, matchingState: options.state,
+    questions: [{ id: 'Q1', prompt: '직무 경험', source: '가상 문항', limit: 500, claimIds: ['PROJ-001'], requirementIds: ['JD-001'] }],
+  };
+  const hashBefore = buildPacket(root, request).questions[0].inputHash;
+  // 경로를 더하거나 바꿔도 기록된 매칭과 문항 입력 해시가 그대로다.
+  put(file, get(file).replace('- 가상 저장소 경로', '- 가상 저장소 경로\n- 새로 찾은 가상 로그 경로'));
+  assert.deepEqual(compareMap(inspectMap(root, options), before).changed, []);
+  assert.deepEqual(compareMap(inspectMap(root, options), before).candidateClaims, []);
+  assert.equal(buildPacket(root, request).questions[0].inputHash, hashBefore);
+  // 원자료 절이 파일 중간에 있어도 같다.
+  put(file, get(file).replace(/## 원자료\n\n[\s\S]*$/, '').replace('## 검증된 사실', '## 원자료\n\n- 옮긴 가상 경로\n\n## 검증된 사실'));
+  assert.deepEqual(compareMap(inspectMap(root, options), before).changed, []);
+  // 한계처럼 내용에 영향을 주는 서술 변경은 여전히 그 파일의 모든 연결을 재검토시킨다.
+  put(file, get(file).replace('실제 매장 적용은 하지 않았다.', '실제 매장 적용은 하지 않았고 비교 결과도 재현하지 못했다.'));
+  assert.deepEqual(compareMap(inspectMap(root, options), before).changed, ['JD-001', 'JD-002']);
+  assert.throws(() => buildPacket(root, request), /입력이 변경/);
+});
+
 test('v2 필드는 packet에 전달되고 표현 제한 절 제목이 달라도 함께 실린다', t => {
   const { root, put, get, options, record } = matchingFixture(t);
   record();

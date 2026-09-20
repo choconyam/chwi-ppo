@@ -15,6 +15,7 @@ export const narrativeSections = ['문제와 목표', '본인의 판단과 행�
 export const cautionHeadings = ['사용하면 안 되는 표현', '사용 시 주의'];
 
 const claimBlocks = () => /^###\s+([A-Z][A-Z0-9-]*-\d{3,})\s*\n([\s\S]*?)(?=^#{1,3}\s|$(?![\s\S]))/gm;
+const sourceSection = () => /^##\s+원자료[ \t]*\n[\s\S]*?(?=^##\s|$(?![\s\S]))/m;
 const sectionBlocks = () => /^##\s+(.+?)[ \t]*\n([\s\S]*?)(?=^##\s|$(?![\s\S]))/gm;
 const normalize = value => value.replaceAll('\r\n', '\n');
 // 값은 같은 줄에서만 시작한다(빈 값이 다음 필드를 삼키지 않게). 들여쓴 이어지는 줄은 한 값으로 합친다.
@@ -81,7 +82,8 @@ export function readClaims(root) {
     const blocks = claimBlocks();
     const matches = [...content.matchAll(blocks)];
     // Preserve shared context/constraints, but do not invalidate other claims when one changes.
-    const contextHash = digest(content.replace(blocks, '').trim());
+    // 원자료 절은 파일 경로 목록일 뿐이라 공통 문맥에서 뺀다. 경로를 더해도 연결된 매칭·문항을 재검토시키지 않는다.
+    const contextHash = digest(content.replace(blocks, '').replace(sourceSection(), '').trim());
     const experience = parseExperience(content);
     for (const match of matches) {
       const field = key => fieldOf(match[2], key);
