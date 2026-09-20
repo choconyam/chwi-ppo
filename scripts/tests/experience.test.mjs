@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { readClaims, readExperiences, checkExperiences, parseExperience } from '../lib/profile.mjs';
+import { readClaims, readExperiences, checkExperiences, parseExperience, unresolvedProfileIds } from '../lib/profile.mjs';
 import { catalog, buildPacket, prepare } from '../apply-packet.mjs';
 import { inspectMap, compareMap } from '../lib/jd-map.mjs';
 import { runMap } from '../jd-map.mjs';
@@ -362,6 +362,66 @@ test('catalog는 직접 일치를 앞에 두고 문맥 일치를 표시하며 �
   assert.doesNotMatch(index, /^- profile\/experiences\/pending\.md/m);
   assert.match(index, /검증 claim이 없어 목록에 없는 경험: profile\/experiences\/pending\.md/);
   assert.doesNotMatch(index, /목록에 없는 경험:.*PROFILE\.md/);
+});
+
+const basicProfile = `# 가상 프로필
+
+## 학력·전공
+
+- 졸업예정: 2030년 2월 — \`EDU-001\` (검증됨)
+- 평점: 3.5/4.5 — \`EDU-002\` (검증됨)
+- 복수전공: 가상학 — \`EDU-003\` (검증됨)
+
+## 경험 인덱스
+
+| 경험 | 파일 |
+|---|---|
+| 가상 재고 예측 프로젝트 | experiences/project.md |
+
+## 기본 사항 claim
+
+### EDU-001
+- 사실: 졸업예정: 2030년 2월
+- 근거: 가상 사용자 확인 기록
+- 상태: 검증됨
+
+### EDU-002
+- 사실: 평점: 3.5/4.5
+- 근거: 가상 성적증명서 1쪽
+- 상태: 검증됨
+`;
+
+test('PROFILE.md의 기본 사항은 claim 블록으로 읽고 경험 근거와 구분해 보여 준다', t => {
+  const { root, put } = fixture(t, { 'profile/experiences/project.md': projectExperience });
+  put('profile/PROFILE.md', basicProfile);
+  assert.equal(readClaims(root).get('EDU-002').fact, '평점: 3.5/4.5');
+  // 문장 속에만 인용되고 블록이 없는 ID를 찾아낸다.
+  assert.deepEqual(unresolvedProfileIds(root), ['EDU-003']);
+  const index = catalog(root, { mode: 'index' });
+  assert.match(index, /profile\/PROFILE\.md: 가상 프로필 \(기본 사항: 학력·지원 조건 등 \/ 검증 claim 2개\)/);
+  // claim 목록에서는 경험 근거가 먼저, 기본 사항은 표시를 달고 뒤에 나온다.
+  const rows = catalog(root, { mode: 'claims' }).split('\n').filter(line => /^- [A-Z]+-\d+/.test(line));
+  assert.deepEqual(rows.map(line => line.match(/^- ([A-Z]+-\d+)/)[1]), ['PROJ-001', 'PROJ-002', 'EDU-001', 'EDU-002']);
+  assert.match(rows[2], /^- EDU-001 \[기본 사항\]: 졸업예정/);
+  assert.doesNotMatch(rows[0], /기본 사항/);
+  assert.match(catalog(root, { query: '평점' }), /EDU-002 \[기본 사항\]/);
+  // PROFILE.md 본문에 검색어가 있어도 다른 기본 사항이 문맥 일치로 딸려 나오지 않는다.
+  assert.doesNotMatch(catalog(root, { query: '평점' }), /EDU-001/);
+  assert.match(catalog(root, { query: '평점' }), /claim 직접 일치 1개 \/ 경험 문맥 일치 0개/);
+});
+
+test('PROFILE.md의 다른 부분이 바뀌어도 기본 사항에 연결된 매칭은 유지되고 해당 사실이 바뀔 때만 재검토된다', t => {
+  const { root, put, get, options } = matchingFixture(t);
+  put('profile/PROFILE.md', basicProfile);
+  put(options.fit, '# 적합성\n진행 판단은 별도입니다.\n\n' + mapping('JD-001', 'EDU-002') + mapping('JD-002', 'PROJ-002'));
+  const before = inspectMap(root, options);
+  // 경험 인덱스 갱신과 다른 기본 사항의 수정은 EDU-002에 연결된 요구를 건드리지 않는다.
+  put('profile/PROFILE.md', get('profile/PROFILE.md')
+    .replace('| 가상 재고 예측 프로젝트 | experiences/project.md |', '| 가상 재고 예측 프로젝트 | experiences/project.md |\n| 새 가상 경험 | experiences/new.md |')
+    .replace('- 사실: 졸업예정: 2030년 2월', '- 사실: 졸업예정: 2030년 8월'));
+  assert.deepEqual(compareMap(inspectMap(root, options), before).changed, []);
+  put('profile/PROFILE.md', get('profile/PROFILE.md').replace('- 사실: 평점: 3.5/4.5', '- 사실: 평점: 3.6/4.5'));
+  assert.deepEqual(compareMap(inspectMap(root, options), before).changed, ['JD-001']);
 });
 
 test('parseExperience는 CRLF와 표시 없는 문서를 안전하게 처리한다', () => {

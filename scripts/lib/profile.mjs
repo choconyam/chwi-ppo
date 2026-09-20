@@ -81,10 +81,13 @@ export function readClaims(root) {
     const content = fs.readFileSync(file, 'utf8').replaceAll('\r\n', '\n');
     const blocks = claimBlocks();
     const matches = [...content.matchAll(blocks)];
+    const experience = parseExperience(content);
     // Preserve shared context/constraints, but do not invalidate other claims when one changes.
     // 원자료 절은 파일 경로 목록일 뿐이라 공통 문맥에서 뺀다. 경로를 더해도 연결된 매칭·문항을 재검토시키지 않는다.
-    const contextHash = digest(content.replace(blocks, '').replace(sourceSection(), '').trim());
-    const experience = parseExperience(content);
+    // PROFILE.md의 기본 사항(학력·지원 조건 등)은 서로 독립된 사실이고, 이 파일은 경험 인덱스 갱신으로 자주 바뀐다.
+    // 그래서 기본 사항 claim은 표현 제한만 공통 문맥으로 삼는다.
+    const contextHash = digest(file === profileFile ? experience.cautions.trim()
+      : content.replace(blocks, '').replace(sourceSection(), '').trim());
     for (const match of matches) {
       const field = key => fieldOf(match[2], key);
       // v2 추가 필드는 값이 없으면 직렬화에서 빠지므로 기존 문항 입력 해시를 바꾸지 않는다.
@@ -104,6 +107,16 @@ export function readClaims(root) {
   if (errors.length) throw new Error(errors.join('\n'));
   if (!claims.size) throw new Error('구조화된 claim이 없습니다. 기존 Markdown을 intake에서 연결하세요.');
   return claims;
+}
+
+export const profilePath = 'profile/PROFILE.md';
+
+// PROFILE.md 문장 속에 `ID`로 인용됐지만 어디에도 claim 블록이 없는 ID. 검증된 것처럼 보여도 catalog·문항 배정에 쓸 수 없다.
+export function unresolvedProfileIds(root, claims = readClaims(root)) {
+  const file = path.join(root, 'profile', 'PROFILE.md');
+  if (!fs.existsSync(file)) return [];
+  const cited = [...fs.readFileSync(file, 'utf8').matchAll(/`([A-Z][A-Z0-9-]*-\d{3,})`/g)].map(match => match[1]);
+  return [...new Set(cited)].filter(id => !claims.has(id)).sort();
 }
 
 // 구조만 검사한다. 의미상 완전성·기여도·인과관계·JD 적합성은 판정하지 않는다.

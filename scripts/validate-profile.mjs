@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { readClaims, readExperiences, checkExperiences } from './lib/profile.mjs';
+import { readClaims, readExperiences, checkExperiences, unresolvedProfileIds } from './lib/profile.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
 const profile = path.join(root, 'profile', 'PROFILE.md');
@@ -49,4 +49,9 @@ if (structureErrors.length > 0) {
 
 const upgraded = [...experiences.values()].filter((meta) => meta.version === 2).length;
 console.log(`프로필 검증: 경험 ${files.length}건, claim ${claims.size}건, 확인 필요 claim ${unresolved}건, experience-v2 ${upgraded}건`);
+const unresolvedIds = unresolvedProfileIds(root, claims);
+if (unresolvedIds.length > 0) {
+  console.log(`주의: PROFILE.md 문장에 인용됐지만 claim 블록이 없는 ID ${unresolvedIds.length}개 — ${unresolvedIds.join(', ')}`);
+  console.log('      이 ID는 catalog에 나오지 않고 문항·JD 매칭에 배정할 수 없습니다. 사실·근거·상태를 갖춘 claim 블록으로 옮기세요.');
+}
 console.log('구조 검사만 통과했습니다. 의미상 완전성·본인 기여 충분성·직무 적합성은 사람이 확인합니다.');

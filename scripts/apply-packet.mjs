@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { digest, readClaims, readExperiences } from './lib/profile.mjs';
+import { digest, readClaims, readExperiences, profilePath } from './lib/profile.mjs';
 import { checkedMap, mapMarker } from './lib/jd-map.mjs';
 
 const json = file => JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -302,24 +302,29 @@ export function catalog(root, options = {}) {
   const own = claim => [claim.id, claim.fact, claim.file, claim.type, claim.contribution, claim.method, claim.outcome]
     .filter(Boolean).join(' ').toLowerCase();
   // 사실 문장에 없는 도구·방법·산출물도 경험 문맥에서 찾되, claim 자체의 일치와 구분해 보여 준다.
-  const context = claim => [experiences.get(claim.file)?.title, experiences.get(claim.file)?.type,
+  // PROFILE.md의 claim은 학력·지원 조건 같은 기본 사항이다. 경험 근거와 구분해 표시하고 경험 뒤에 둔다.
+  const basic = claim => claim.file === profilePath;
+  // 기본 사항은 서로 독립된 사실이고 PROFILE.md 본문은 모든 경험의 요약이라, 문맥 일치 대상에서 뺀다.
+  const context = claim => basic(claim) ? '' : [experiences.get(claim.file)?.title, experiences.get(claim.file)?.type,
     experiences.get(claim.file)?.searchText].filter(Boolean).join(' ').toLowerCase();
+  const experienceFirst = list => [...list.filter(c => !basic(c)), ...list.filter(basic)];
   const inScope = all.filter(c => !files || files.includes(c.file));
-  const direct = inScope.filter(c => matches(own(c)));
-  const contextual = inScope.filter(c => !direct.includes(c) && matches(`${own(c)} ${context(c)}`));
+  const direct = experienceFirst(inScope.filter(c => matches(own(c))));
+  const contextual = experienceFirst(inScope.filter(c => !direct.includes(c) && matches(`${own(c)} ${context(c)}`)));
   const selected = [...direct, ...contextual];
   const rows = options.mode === 'index'
     ? [...new Set(selected.map(c => c.file))].map(file => {
       const meta = experiences.get(file);
-      const detail = [meta?.type && `유형 ${meta.type}`, meta?.role && `역할 ${summarize(meta.role)}`,
+      const detail = [file === profilePath && '기본 사항: 학력·지원 조건 등', meta?.type && `유형 ${meta.type}`,
+        meta?.role && `역할 ${summarize(meta.role)}`,
         `검증 claim ${selected.filter(c => c.file === file).length}개`].filter(Boolean);
       return `- ${file}: ${meta?.title || file} (${detail.join(' / ')})`;
-    }) : selected.map(c => [`- ${c.id}`, c.type ? ` [${c.type}]` : '', `: ${c.fact}`,
+    }) : selected.map(c => [`- ${c.id}`, basic(c) ? ' [기본 사항]' : '', c.type ? ` [${c.type}]` : '', `: ${c.fact}`,
       c.method ? ` / 방법·도구: ${c.method}` : '', c.outcome ? ` / 결과·상태: ${c.outcome}` : '',
       ` (${c.file}:${c.line})`, contextual.includes(c) ? ' [경험 문맥 일치: claim 자체에는 검색어 없음]' : ''].join(''));
   // 검증 claim이 없는 경험은 목록에 나오지 않는다. 없는 경험으로 오해하지 않게 따로 알린다.
   const verifiedFiles = new Set(all.map(c => c.file));
-  const hidden = [...experiences.keys()].filter(file => file !== 'profile/PROFILE.md' && !verifiedFiles.has(file)
+  const hidden = [...experiences.keys()].filter(file => file !== profilePath && !verifiedFiles.has(file)
     && (!files || files.includes(file)));
   const offset = Number(options.offset ?? 0);
   const limit = Number(options.limit ?? rows.length);
