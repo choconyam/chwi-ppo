@@ -8,6 +8,7 @@
 |---|---|
 | 원자료 최초 정리·증분 갱신 | [intake](runtime/INTAKE.md) |
 | 공고 목록 수집·공식 JD 검증·추천 | [discover](runtime/DISCOVER.md) |
+| JD 문장별 요구·경험 연결·증분 누락 검사 | [JD 매칭](runtime/JD_MATCHING.md) |
 | 지원서 소재 매핑·초안·선택 검수·제출 전 final | [apply](runtime/APPLY.md) |
 | 공고 상태 조회·로컬 일정 동기화 | [track](runtime/TRACK.md) |
 

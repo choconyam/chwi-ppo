@@ -8,7 +8,7 @@
 node scripts/apply-packet.mjs catalog --out .work/apply/claims.md
 ```
 
-catalog는 검증된 사실과 정본 위치만 보여 준다. 소재 매핑 뒤 회사/직무 폴더에 다음 `application-request.json`을 둔다.
+catalog는 검증된 사실과 정본 위치만 보여 준다. 경험이 많으면 `--mode index --limit 30`으로 파일 인덱스를 먼저 보고 `--files` 또는 `--query`로 후보를 좁힌다. 새 문장별 분석의 형식·검사·변경 재사용은 [JD 매칭 계약](JD_MATCHING.md)을 따른다. 소재 매핑 뒤 회사/직무 폴더에 다음 `application-request.json`을 둔다.
 
 ```json
 {
@@ -22,6 +22,8 @@ catalog는 검증된 사실과 정본 위치만 보여 준다. 소재 매핑 뒤
 ```
 
 JSON 표시는 공식 검증을 대신하지 않는다. 문항 원문·제한·출처가 없거나 자격이 미확정이면 해당 문항을 보류한다.
+
+01에 `- 매칭 형식: jd-map-v1`이 있으면 `matchingState`와 문항별 `requirementIds`도 필수다. 03의 문항 → 요구 → claim 배정을 동일하게 담는다. 기존 형식은 그대로 지원하며 일괄 변환하지 않는다. 문장별 형식의 packet.md에는 선택한 요구와 경험 연결만 포함하고, 선택하지 않은 요구의 매칭 변경은 무관한 문항 해시를 바꾸지 않는다. 공식 원문·공통 판단 변경은 전체 문항에 보수적으로 반영한다.
 
 ```powershell
 node scripts/apply-packet.mjs prepare --request companies/회사/직무/application-request.json --out .work/apply/current/packet.json

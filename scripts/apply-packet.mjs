@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { digest, readClaims } from './lib/profile.mjs';
+import { checkedMap, mapMarker } from './lib/jd-map.mjs';
 
 const json = file => JSON.parse(fs.readFileSync(file, 'utf8'));
 const assert = (ok, message) => { if (!ok) throw new Error(message); };
@@ -30,6 +31,9 @@ export function buildPacket(root, request) {
     return { key, file: relative, content, hash: digest(content) };
   });
   const claims = readClaims(root);
+  assert(!request.matchingState || documents.find(d => d.key === 'analysis').content.includes(mapMarker), 'matchingState가 있으면 JD 매칭 형식 표시를 유지해야 합니다.');
+  const matching = documents.find(d => d.key === 'analysis').content.includes(mapMarker)
+    ? checkedMap(root, request.documents, request.matchingState, claims) : null;
   assert(Array.isArray(request.questions) && request.questions.length, '공식 문항이 필요합니다.');
   const ids = new Set();
   const questions = [];
@@ -48,7 +52,20 @@ export function buildPacket(root, request) {
     });
     // Full source hashes and line numbers remain in the packet for provenance, not reuse decisions.
     const relevantClaims = selected.map(({ sourceHash, line, ...claim }) => claim);
-    const inputHash = digest(JSON.stringify({ question, claims: relevantClaims, documents: documents.map(d => d.hash),
+    let relevantDocuments = documents.map(d => d.hash);
+    if (matching) {
+      assert(Array.isArray(question.requirementIds), `${question.id}: requirementIds가 필요합니다.`);
+      assert(new Set(question.requirementIds).size === question.requirementIds.length, `${question.id}: 중복 요구 ID`);
+      assert(question.requirementIds.length || question.requirementNote?.trim(), `${question.id}: 직무 요구를 배정하지 않는 이유가 필요합니다.`);
+      const requirements = question.requirementIds.map(id => {
+        const entry = matching.entries.find(e => e.id === id);
+        assert(entry, `${question.id}: 알 수 없는 요구 ID ${id}`);
+        assert(entry.claimIds.some(claimId => question.claimIds.includes(claimId)), `${question.id}: ${id}에 연결된 근거 claim을 배정하세요.`);
+        return entry.hash;
+      });
+      relevantDocuments = [matching.jdHash, matching.contextHash, ...requirements];
+    }
+    const inputHash = digest(JSON.stringify({ question, claims: relevantClaims, documents: relevantDocuments,
       official: { status: request.official.status, url: request.official.url }, eligibility: request.eligibility, fit: request.fit, format: request.format ?? '' }));
       questions.push({ ...question, claims: selected, inputHash });
     } catch (error) {
@@ -56,7 +73,7 @@ export function buildPacket(root, request) {
     }
   }
   assert(questions.length, blockedQuestions.map(q => q.reason).join('\n'));
-  return { version: 1, documents, questions, blockedQuestions };
+  return { version: 1, documents, questions, blockedQuestions, ...(matching ? { matching } : {}) };
 }
 
 export function validateDraft(content, question) {
@@ -66,7 +83,9 @@ export function validateDraft(content, question) {
   assert(body.length && body.length <= question.limit, `글자수 오류: ${body.length}/${question.limit}`);
   assert(!/\[확인 필요|TODO|TBD|<회사명>|<직무명>/.test(body), '본문에 미완성 항목이 있습니다.');
   const tracking = content.replace(blocks[0][0], '');
-  const references = [...new Set(tracking.match(/\b[A-Z][A-Z0-9-]*-\d{3,}\b/g) ?? [])];
+  const allReferences = [...new Set(tracking.match(/\b[A-Z][A-Z0-9-]*-\d{3,}\b/g) ?? [])];
+  const references = allReferences.filter(id => !question.requirementIds || !/^JD-\d+$/.test(id));
+  if (question.requirementIds) assert(allReferences.filter(id => /^JD-\d+$/.test(id)).every(id => question.requirementIds.includes(id)), '배정되지 않은 요구 ID가 인용되었습니다.');
   assert(references.length, '본문 아래에 claim 추적표가 필요합니다.');
   assert(references.every(id => question.claimIds.includes(id)), '배정되지 않은 claim이 인용되었습니다.');
   return { characters: body.length, references };
@@ -177,10 +196,14 @@ export function prepare(root, requestFile, outputFile, previousFile) {
     if (claim.cautions?.trim()) cautionsByFile.set(claim.file, claim.cautions.trim());
   }
   const analysis = packet.documents.find(doc => doc.key === 'analysis');
+  const usedRequirements = new Set(packet.questions.flatMap(q => q.requirementIds ?? []));
+  const analysisText = packet.matching
+    ? [packet.matching.analysisContext, packet.matching.fitContext, ...packet.matching.entries.filter(e => usedRequirements.has(e.id))
+      .map(e => `### ${e.id}\n${e.requirement}\n\n${e.mapping}`)].join('\n\n') : analysis?.content;
   const documentLabels = { jd: '공식 JD', analysis: '직무 분석', fit: '적합도 판단' };
   const markdown = ['# 지원서 작성 입력', '', '배정된 검증 사실의 공통 사전과 문항별 claim-id 매핑입니다. 전체 원문은 필요할 때 아래 경로에서 직접 엽니다.', '',
     '## 입력 문서', '', ...packet.documents.map(doc => `- ${documentLabels[doc.key] ?? doc.key}: ${doc.file}`), '',
-    ...(analysis ? ['## 작성에 필요한 직무 분석', '', analysis.content.trim(), ''] : []),
+    ...(analysisText ? ['## 작성에 필요한 직무 분석·경험 연결', '', analysisText.trim(), ''] : []),
     ...(packet.blockedQuestions.length ? ['## 보류 문항', '', ...packet.blockedQuestions.map(q => `- ${q.id}: ${q.reason}`), ''] : []),
     '## 공통 verified claim 사전', '',
     ...[...selectedClaims.values()].flatMap(c => [`### ${c.id}`, `- 사실: ${c.fact}`, `- 근거: ${c.evidence}`, `- 정본: ${c.file}:${c.line}`, '']),
@@ -188,6 +211,7 @@ export function prepare(root, requestFile, outputFile, previousFile) {
     ...packet.questions.flatMap(q => [`## ${q.id}: ${{ 'reuse-final': '최종 검수 PASS 본문 재사용', 'reuse-draft': '검수 전 초안 재사용', draft: '초안 작성·수정 필요' }[q.action]}`, '',
       `- 문항: ${q.prompt}`, `- 원문 위치: ${q.source}`, `- 제한: ${q.limit}자`, `- 입력 해시: ${q.inputHash}`,
       `- 배정 claim-id: ${q.claims.map(c => c.id).join(', ')}`, '',
+      ...(q.requirementIds ? [`- 배정 요구 ID: ${q.requirementIds.join(', ') || '없음'}`, ...(q.requirementNote ? [`- 요구 배정 메모: ${q.requirementNote}`] : []), ''] : []),
       ...(q.draftCheckpoint?.file ? [`- 현재 초안: ${q.draftCheckpoint.file}`, ''] : []),
       ...(q.previousDraft ? [`- 기존 초안 참고: ${q.previousDraft} (현재 입력 기준 재검토 필요)`, ''] : []),
       ...(q.instructions ? [`- 작성 요청: ${q.instructions}`, ''] : [])])].join('\n');
@@ -258,6 +282,27 @@ export function recordReview(root, packetFile, questionId, draftRelative, report
   return question;
 }
 
+export function catalog(root, options = {}) {
+  const all = [...readClaims(root).values()].filter(c => c.status === '검증됨');
+  assert(!options.mode || ['index', 'claims'].includes(options.mode), 'catalog mode는 index 또는 claims입니다.');
+  const files = options.files?.split(',').map(s => s.trim());
+  const query = options.query?.toLowerCase();
+  const selected = all.filter(c => (!files || files.includes(c.file))
+    && (!query || `${c.id} ${c.fact} ${c.file}`.toLowerCase().includes(query)));
+  const rows = options.mode === 'index'
+    ? [...new Set(selected.map(c => c.file))].map(file => {
+      const title = fs.readFileSync(localPath(root, file), 'utf8').match(/^# (.+)$/m)?.[1]?.trim() ?? file;
+      return `- ${file}: ${title} (검증 claim ${selected.filter(c => c.file === file).length}개)`;
+    }) : selected.map(c => `- ${c.id}: ${c.fact} (${c.file}:${c.line})`);
+  const offset = Number(options.offset ?? 0);
+  const limit = Number(options.limit ?? rows.length);
+  assert(Number.isInteger(offset) && offset >= 0 && Number.isInteger(limit) && limit >= 0, 'offset/limit은 0 이상의 정수입니다.');
+  const shown = rows.slice(offset, offset + limit);
+  return ['# 검증된 경험 요약', '', `- 전체 검증 claim: ${all.length}개 / 조건에 맞는 claim: ${selected.length}개`,
+    `- 표시: ${shown.length}/${rows.length}행 / offset: ${offset} / 다음 offset: ${offset + shown.length < rows.length ? offset + shown.length : '없음'}`,
+    '- 범위 주의: 필터·페이지 밖의 경험은 미검토입니다. 검색 결과 없음은 경험 부재의 증명이 아닙니다.', '', ...shown].join('\n') + '\n';
+}
+
 function main() {
   const [command, ...args] = process.argv.slice(2);
   const options = {};
@@ -267,10 +312,8 @@ function main() {
   }
   const root = path.resolve(options.root ?? path.join(import.meta.dirname, '..'));
   if (command === 'catalog') {
-    const claims = [...readClaims(root).values()].filter(c => c.status === '검증됨');
-    const content = ['# 검증된 경험 요약', '', ...claims.map(c => `- ${c.id}: ${c.fact} (${c.file}:${c.line})`)].join('\n');
-    write(localPath(root, options.out), content + '\n');
-    console.log(`검증된 claim ${claims.length}개를 요약했습니다.`);
+    write(localPath(root, options.out), catalog(root, options));
+    console.log('검증된 경험 목록을 저장했습니다. 표시 범위·미검토 범위를 출력 파일에서 확인하세요.');
   } else if (command === 'prepare') {
     const packet = prepare(root, localPath(root, options.request), localPath(root, options.out), options.previous && localPath(root, options.previous));
     console.log(`진행 문항 ${packet.questions.length}개: 최종 PASS 재사용 ${packet.questions.filter(q => q.action === 'reuse-final').length}, 검수 전 초안 재사용 ${packet.questions.filter(q => q.action === 'reuse-draft').length}, 초안 작성 ${packet.questions.filter(q => q.action === 'draft').length}, 보류 ${packet.blockedQuestions.length}`);

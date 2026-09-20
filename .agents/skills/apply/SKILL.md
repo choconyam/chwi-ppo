@@ -18,8 +18,8 @@ description: 선택한 직무의 지원서 초안·기존 문장을 작성하거
 
 1. 선택한 직무의 공식 JD·분석·적합성, 실제 문항 원문·글자수를 확인한다. 로그인 뒤에만 보이는 문항은 사용자에게 그 문항만 요청한다. 비슷한 회사 문항을 대신 만들지 않는다.
 2. 자격 `needs-review/ineligible`, 적합성 `재검토`이면 해결할 조건을 밝히고 해당 직무의 제출용 작성을 보류한다. 다른 직무나 검증된 경험 작업까지 중단하지 않는다.
-3. `apply-packet.mjs catalog`의 검증 사실 요약으로 문항별 claim을 배정한다. 적은 문항은 메인이 evidence-matcher 역할을 수행하고, 대규모 문항 묶음만 Luna Max에 넘긴다.
-4. `03_소재매핑.md`와 `application-request.json`을 [apply 실행 계약](../../../docs/runtime/APPLY.md)의 형식으로 만든다. 근거가 부족한 문항만 필요한 사용자 사실을 확인하거나 intake 갱신으로 돌린다.
+3. `apply-packet.mjs catalog`의 검증 사실 요약으로 문항별 claim을 배정한다. 경험이 많으면 `--mode index --limit 30`으로 인덱스를 보고 `--files`로 관련 경험만 읽는다. 미검토 범위를 남기며 검색 결과 없음과 경험 부재를 구별한다. 적은 문항은 메인이 evidence-matcher 역할을 수행하고, 대규모 문항 묶음만 Luna Max에 넘긴다.
+4. `03_소재매핑.md`와 `application-request.json`을 [apply 실행 계약](../../../docs/runtime/APPLY.md)의 형식으로 만든다. 01이 문장별 형식이면 [JD 매칭 계약](../../../docs/runtime/JD_MATCHING.md)의 검토 기록을 재사용하고 문항 → 요구 ID → claim을 연결한다. 요구 전체를 모든 문항에 억지로 배정하지 않는다. 입력이 바뀌면 로컬 check의 영향 항목만 재판단하며 원문 전체·모든 경험을 반복 전달하지 않는다. 근거가 부족한 문항만 필요한 사용자 사실을 확인하거나 intake 갱신으로 돌린다.
 5. `apply-packet.mjs prepare`의 compact `packet.md`를 우선 읽는다. 검증용 JSON은 입력 전문/hash를 유지하지만 모델용 Markdown은 JD 분석·선택 claim·공통 표현 제한을 중복 없이 제공한다. 누락이나 실제 불일치가 있을 때만 연결된 JD/경험 원문 위치를 추가 확인한다. `draft`만 새로 쓰고, `reuse-draft`는 checkpoint된 검수 전 초안, `reuse-final`은 현재 입력·본문·보고서 hash가 유효한 final PASS다.
 
 ## 작성과 검수

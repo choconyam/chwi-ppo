@@ -12,6 +12,8 @@ codex-reasoning: max
 
 ## 입력과 출력
 
+01이 문장별 형식이면 `docs/runtime/JD_MATCHING.md`의 검토 기록을 재사용하고 03에 문항 → 요구 ID → 검증 claim과 선택 이유·한계를 적는다. request에도 같은 requirementIds·claimIds를 배정한다. 비직무 문항의 빈 요구 배정은 사유를 남긴다. 모든 요구를 자소서에 넣지 않고 문항 의도에 맞는 요구만 선택한다. 새 원문 분해나 전체 경험 재검토를 반복하지 않으며 변경 검사에서 영향받는 항목만 갱신한다.
+
 - 입력: `01_JD분석.md`, `02_직무적합성.md`, 검증 claim 요약, 배정한 경험 Markdown
 - 출력: `companies/<회사>/<직무>/03_소재매핑.md`
 
