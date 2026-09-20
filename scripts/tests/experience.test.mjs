@@ -179,7 +179,7 @@ test('v2 필수 필드 누락·잘못된 값·중복 ID를 차단한다', t => {
     [projectExperience.replace('- 유형: 판단\n', ''), /PROJ-001: claim 유형 누락/],
     [projectExperience.replace('- 유형: 판단', '- 유형: 소감'), /잘못된 claim 유형 소감/],
     [projectExperience.replace('- 결과·상태: 검증 구간 기준 비교 완료, 실제 매장 적용은 미검증\n', ''), /PROJ-002: 결과 claim에 결과·상태가 없습니다/],
-    [projectExperience.replace('현재 상태: 완료', '현재 상태: 진행 중이며 결과는 확인 필요'), /PROJ-002: 현재 상태가 미확인인데 결과 claim이 검증됨/],
+    [projectExperience.replace('현재 상태: 완료', '현재 상태: [확인 필요]'), /PROJ-002: 현재 상태가 확인 필요인데 결과 claim이 검증됨/],
   ]) {
     put('profile/experiences/project.md', content);
     assert.match(checkExperiences(root).join('\n'), expected);
@@ -288,6 +288,54 @@ test('v2 필드는 packet에 전달되고 표현 제한 절 제목이 달라도 
   record();
   prepare(root, requestFile, out);
   assert.match(fs.readFileSync(out.replace('.json', '.md'), 'utf8'), /매장 매출이 개선됐다고 쓰지 않는다/);
+});
+
+test('opt-in 표시는 머리 정보의 독립된 줄만 인정하고 claim 없는 v2·상태 문장 속 단어로 오판하지 않는다', t => {
+  const { root, put } = fixture(t, { 'profile/experiences/legacy.md': legacyExperience });
+  // 본문 산문에 표시 문자열이 언급돼도 기존 형식으로 남는다.
+  put('profile/experiences/legacy.md', legacyExperience.replace('- 기존 형식을 그대로 유지한다.',
+    '- 메모: 나중에 `- 경험 형식: experience-v2`로 올릴 예정'));
+  assert.equal(readExperiences(root).get('profile/experiences/legacy.md').version, 1);
+  assert.deepEqual(checkExperiences(root), []);
+  // claim이 하나도 없는 v2 경험은 통과하지 못한다.
+  put('profile/experiences/empty.md', credentialExperience.replace(/### CERT-001[\s\S]*?(?=## 원자료)/, ''));
+  assert.match(checkExperiences(root).join('\n'), /empty\.md: 검증된 사실에 claim이 없습니다/);
+  // 현재 상태 문장에 "미확인"이라는 단어가 있을 뿐이면 모순으로 보지 않는다.
+  put('profile/experiences/empty.md', credentialExperience
+    .replace('현재 상태: 완료', '현재 상태: 성적 취득 완료. 만료일은 미확인')
+    .replace('- 유형: 역량', '- 유형: 결과\n- 결과·상태: 성적표로 확인'));
+  assert.deepEqual(checkExperiences(root), []);
+});
+
+test('빈 필드는 다음 줄을 값으로 삼키지 않고 들여쓴 이어지는 줄은 한 값으로 합친다', t => {
+  const { root, put } = fixture(t, { 'profile/experiences/legacy.md': legacyExperience });
+  put('profile/experiences/legacy.md', legacyExperience.replace('- 사실: 기존 형식으로 적은 사실이다.', '- 사실:'));
+  assert.throws(() => readClaims(root), /OLD-001: 사실·근거·상태를 확인하세요/);
+  put('profile/experiences/legacy.md', legacyExperience.replace('- 사실: 기존 형식으로 적은 사실이다.',
+    '- 사실: 첫 줄에서 시작해\n  둘째 줄로 이어지는 사실이다.'));
+  assert.equal(readClaims(root).get('OLD-001').fact, '첫 줄에서 시작해 둘째 줄로 이어지는 사실이다.');
+  assert.equal(readClaims(root).get('OLD-001').evidence, '가상 테스트 기록');
+});
+
+test('catalog는 직접 일치를 앞에 두고 문맥 일치를 표시하며 여러 단어·목록에 없는 경험을 알린다', t => {
+  const { root } = fixture(t, {
+    'profile/experiences/project.md': projectExperience,
+    'profile/experiences/pending.md': legacyExperience.replace('OLD-001', 'PEND-001').replace('상태: 검증됨', '상태: 확인 필요'),
+  });
+  // pandas는 PROJ-001의 필드에 있고 PROJ-002에는 없다(경험 서술 절에만 있다).
+  const rows = catalog(root, { query: 'pandas' }).split('\n').filter(line => line.startsWith('- PROJ-'));
+  assert.match(rows[0], /^- PROJ-001 /);
+  assert.doesNotMatch(rows[0], /경험 문맥 일치/);
+  assert.match(rows[1], /^- PROJ-002 .*\[경험 문맥 일치/);
+  assert.match(catalog(root, { query: 'pandas' }), /claim 직접 일치 1개 \/ 경험 문맥 일치 1개/);
+  // 띄어 쓴 단어는 순서·인접과 무관하게 모두 포함되면 일치한다.
+  assert.match(catalog(root, { query: '보간 pandas' }), /조건에 맞는 claim: 2개/);
+  assert.match(catalog(root, { query: 'pandas 없는단어' }), /조건에 맞는 claim: 0개/);
+  // 검증 claim이 없는 경험은 목록에는 없지만 존재가 고지된다.
+  const index = catalog(root, { mode: 'index' });
+  assert.doesNotMatch(index, /^- profile\/experiences\/pending\.md/m);
+  assert.match(index, /검증 claim이 없어 목록에 없는 경험: profile\/experiences\/pending\.md/);
+  assert.doesNotMatch(index, /목록에 없는 경험:.*PROFILE\.md/);
 });
 
 test('parseExperience는 CRLF와 표시 없는 문서를 안전하게 처리한다', () => {

@@ -296,12 +296,18 @@ export function catalog(root, options = {}) {
   const experiences = readExperiences(root);
   assert(!options.mode || ['index', 'claims'].includes(options.mode), 'catalog mode는 index 또는 claims입니다.');
   const files = options.files?.split(',').map(s => s.trim());
-  const query = options.query?.toLowerCase();
-  // 사실 문장에 없는 도구·방법·산출물도 경험 문맥에서 찾을 수 있게 한다.
-  const haystack = claim => [claim.id, claim.fact, claim.file, claim.type, claim.contribution, claim.method,
-    claim.outcome, experiences.get(claim.file)?.title, experiences.get(claim.file)?.type,
+  // 띄어 쓴 단어는 모두 포함돼야 일치로 본다. 한 단어 질의의 결과는 이전과 같다.
+  const terms = (options.query ?? '').toLowerCase().split(/\s+/).filter(Boolean);
+  const matches = text => terms.every(term => text.includes(term));
+  const own = claim => [claim.id, claim.fact, claim.file, claim.type, claim.contribution, claim.method, claim.outcome]
+    .filter(Boolean).join(' ').toLowerCase();
+  // 사실 문장에 없는 도구·방법·산출물도 경험 문맥에서 찾되, claim 자체의 일치와 구분해 보여 준다.
+  const context = claim => [experiences.get(claim.file)?.title, experiences.get(claim.file)?.type,
     experiences.get(claim.file)?.searchText].filter(Boolean).join(' ').toLowerCase();
-  const selected = all.filter(c => (!files || files.includes(c.file)) && (!query || haystack(c).includes(query)));
+  const inScope = all.filter(c => !files || files.includes(c.file));
+  const direct = inScope.filter(c => matches(own(c)));
+  const contextual = inScope.filter(c => !direct.includes(c) && matches(`${own(c)} ${context(c)}`));
+  const selected = [...direct, ...contextual];
   const rows = options.mode === 'index'
     ? [...new Set(selected.map(c => c.file))].map(file => {
       const meta = experiences.get(file);
@@ -310,14 +316,21 @@ export function catalog(root, options = {}) {
       return `- ${file}: ${meta?.title || file} (${detail.join(' / ')})`;
     }) : selected.map(c => [`- ${c.id}`, c.type ? ` [${c.type}]` : '', `: ${c.fact}`,
       c.method ? ` / 방법·도구: ${c.method}` : '', c.outcome ? ` / 결과·상태: ${c.outcome}` : '',
-      ` (${c.file}:${c.line})`].join(''));
+      ` (${c.file}:${c.line})`, contextual.includes(c) ? ' [경험 문맥 일치: claim 자체에는 검색어 없음]' : ''].join(''));
+  // 검증 claim이 없는 경험은 목록에 나오지 않는다. 없는 경험으로 오해하지 않게 따로 알린다.
+  const verifiedFiles = new Set(all.map(c => c.file));
+  const hidden = [...experiences.keys()].filter(file => file !== 'profile/PROFILE.md' && !verifiedFiles.has(file)
+    && (!files || files.includes(file)));
   const offset = Number(options.offset ?? 0);
   const limit = Number(options.limit ?? rows.length);
   assert(Number.isInteger(offset) && offset >= 0 && Number.isInteger(limit) && limit >= 0, 'offset/limit은 0 이상의 정수입니다.');
   const shown = rows.slice(offset, offset + limit);
   return ['# 검증된 경험 요약', '', `- 전체 검증 claim: ${all.length}개 / 조건에 맞는 claim: ${selected.length}개`,
     `- 표시: ${shown.length}/${rows.length}행 / offset: ${offset} / 다음 offset: ${offset + shown.length < rows.length ? offset + shown.length : '없음'}`,
-    '- 범위 주의: 필터·페이지 밖의 경험은 미검토입니다. 검색 결과 없음은 경험 부재의 증명이 아닙니다.', '', ...shown].join('\n') + '\n';
+    '- 범위 주의: 필터·페이지 밖의 경험은 미검토입니다. 검색 결과 없음은 경험 부재의 증명이 아닙니다.',
+    ...(terms.length ? [`- 일치 구분: claim 직접 일치 ${direct.length}개 / 경험 문맥 일치 ${contextual.length}개 (문맥 일치는 해당 claim이 검색어를 뒷받침한다는 뜻이 아닙니다)`] : []),
+    ...(hidden.length ? [`- 검증 claim이 없어 목록에 없는 경험: ${hidden.join(', ')} (확인 필요·사용 금지 claim만 있음)`] : []),
+    '', ...shown].join('\n') + '\n';
 }
 
 function main() {

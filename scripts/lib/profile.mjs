@@ -17,7 +17,11 @@ export const cautionHeadings = ['사용하면 안 되는 표현', '사용 시 �
 const claimBlocks = () => /^###\s+([A-Z][A-Z0-9-]*-\d{3,})\s*\n([\s\S]*?)(?=^#{1,3}\s|$(?![\s\S]))/gm;
 const sectionBlocks = () => /^##\s+(.+?)[ \t]*\n([\s\S]*?)(?=^##\s|$(?![\s\S]))/gm;
 const normalize = value => value.replaceAll('\r\n', '\n');
-const fieldOf = (text, key) => text.match(new RegExp(`^- ${key}:\\s*(.+)$`, 'm'))?.[1]?.trim();
+// 값은 같은 줄에서만 시작한다(빈 값이 다음 필드를 삼키지 않게). 들여쓴 이어지는 줄은 한 값으로 합친다.
+const fieldOf = (text, key) => {
+  const match = text.match(new RegExp(`^- ${key}:[ \\t]*(.*(?:\\n[ \\t]+(?!- ).+)*)$`, 'm'));
+  return match?.[1]?.replace(/\s*\n\s*/g, ' ').trim() || undefined;
+};
 
 export function parseExperience(content) {
   const text = normalize(content);
@@ -30,7 +34,8 @@ export function parseExperience(content) {
   const narrative = [...sections].filter(([name]) => name !== '검증된 사실')
     .map(([name, body]) => `${name}\n${body}`).join('\n');
   return {
-    version: text.includes(experienceMarker) ? 2 : 1,
+    // 머리 정보의 독립된 줄일 때만 opt-in이다. 본문 산문에 같은 문자열이 있어도 v2로 보지 않는다.
+    version: header.split('\n').some(line => line.trim() === experienceMarker) ? 2 : 1,
     title: text.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? '',
     type: fieldOf(header, '경험 유형'),
     period: fieldOf(header, '기간'),
@@ -115,12 +120,16 @@ export function checkExperiences(root, claims = readClaims(root), experiences = 
       }
       if (!meta.cautionHeading) errors.push(`${file}: 표현 제한 절 누락 (${cautionHeadings.join(' 또는 ')})`);
     }
-    for (const claim of [...claims.values()].filter(c => c.file === file)) {
+    const fileClaims = [...claims.values()].filter(c => c.file === file);
+    if (!fileClaims.length) errors.push(`${file}: 검증된 사실에 claim이 없습니다.`);
+    // 상태 문장 속 단어가 아니라 현재 상태 칸 자체가 미정일 때만 구조적 모순으로 본다.
+    const stateUnresolved = /^\[?확인 필요/.test(meta.state ?? '');
+    for (const claim of fileClaims) {
       if (!claim.type) errors.push(`${claim.id}: claim 유형 누락 (${claimTypes.join(' | ')})`);
       else if (!claimTypes.includes(claim.type)) errors.push(`${claim.id}: 잘못된 claim 유형 ${claim.type}`);
       if (claim.type === '결과' && !claim.outcome) errors.push(`${claim.id}: 결과 claim에 결과·상태가 없습니다.`);
-      if (claim.type === '결과' && claim.status === '검증됨' && /확인 필요|미확인/.test(meta.state ?? '')) {
-        errors.push(`${claim.id}: 현재 상태가 미확인인데 결과 claim이 검증됨입니다.`);
+      if (claim.type === '결과' && claim.status === '검증됨' && stateUnresolved) {
+        errors.push(`${claim.id}: 현재 상태가 확인 필요인데 결과 claim이 검증됨입니다.`);
       }
     }
   }

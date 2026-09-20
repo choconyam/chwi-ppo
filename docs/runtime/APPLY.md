@@ -8,7 +8,7 @@
 node scripts/apply-packet.mjs catalog --out .work/apply/claims.md
 ```
 
-catalog는 검증된 사실과 정본 위치만 보여 준다. 경험이 많으면 `--mode index --limit 30`으로 파일 인덱스를 먼저 보고 `--files` 또는 `--query`로 후보를 좁힌다. 새 문장별 분석의 형식·검사·변경 재사용은 [JD 매칭 계약](JD_MATCHING.md)을 따른다. 소재 매핑 뒤 회사/직무 폴더에 다음 `application-request.json`을 둔다.
+catalog는 검증된 사실과 정본 위치를 보여 주며, 경험에 적혀 있으면 경험 유형·본인 역할과 claim의 유형·방법·도구·결과·상태도 함께 표시한다. 경험이 많으면 `--mode index --limit 30`으로 파일 인덱스를 먼저 보고 `--files` 또는 `--query`로 후보를 좁힌다. `[경험 문맥 일치]`로 표시된 claim은 그 경험을 열어 볼 단서일 뿐이므로 근거로 배정하기 전에 정본에서 확인한다([경험 정본 계약](EXPERIENCE.md)). 새 문장별 분석의 형식·검사·변경 재사용은 [JD 매칭 계약](JD_MATCHING.md)을 따른다. 소재 매핑 뒤 회사/직무 폴더에 다음 `application-request.json`을 둔다.
 
 ```json
 {
