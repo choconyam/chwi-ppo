@@ -17,13 +17,13 @@ catalog는 검증된 사실과 정본 위치를 보여 주며, 경험에 적혀 
   "eligibility": {"status":"eligible", "reason":"공식 요건과 확인된 사용자 조건 대조"},
   "fit": {"decision":"proceed"},
   "documents": {"jd":"companies/회사/직무/00_JD.md", "analysis":"companies/회사/직무/01_JD분석.md", "fit":"companies/회사/직무/02_직무적합성.md"},
-  "questions": [{"id":"Q1", "prompt":"공식 문항 원문", "source":"공식 지원화면 1번", "limit":1000, "claimIds":["WORK-001"], "instructions":"사용자 요청"}]
+  "questions": [{"id":"Q1", "prompt":"공식 문항 원문", "source":"공식 지원화면 1번", "limit":1000, "claimIds":["WORK-001"], "answerPlan":"질문에 직접 답할 핵심 주장과 이를 증명할 경험", "instructions":"사용자 요청"}]
 }
 ```
 
 JSON 표시는 공식 검증을 대신하지 않는다. 문항 원문·제한·출처가 없거나 자격이 미확정이면 해당 문항을 보류한다.
 
-01에 `- 매칭 형식: jd-map-v1`이 있으면 `matchingState`와 문항별 `requirementIds`도 필수다. 03의 문항 → 요구 → claim 배정을 동일하게 담는다. 기존 형식은 그대로 지원하며 일괄 변환하지 않는다. 문장별 형식의 packet.md에는 선택한 요구와 경험 연결만 포함하고, 선택하지 않은 요구의 매칭 변경은 무관한 문항 해시를 바꾸지 않는다. 공식 원문·공통 판단 변경은 전체 문항에 보수적으로 반영한다.
+01에 `- 매칭 형식: jd-map-v1`이 있으면 `matchingState`와 문항별 `requirementIds`도 필수다. 03의 문항 → 요구 → claim 배정을 동일하게 담고, 새 초안은 문항별 질문 의도·핵심 답·근거의 연결을 `answerPlan`에 압축한다. 기존 입력은 그대로 지원하며 일괄 변환하지 않는다. 문장별 형식의 packet.md에는 선택한 요구와 경험 연결 및 답변 설계만 포함하고, 선택하지 않은 요구의 매칭 변경은 무관한 문항 해시를 바꾸지 않는다. 공식 원문·공통 판단 변경은 전체 문항에 보수적으로 반영한다.
 
 ```powershell
 node scripts/apply-packet.mjs prepare --request companies/회사/직무/application-request.json --out .work/apply/current/packet.json

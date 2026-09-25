@@ -216,6 +216,7 @@ export function prepare(root, requestFile, outputFile, previousFile) {
       `- 문항: ${q.prompt}`, `- 원문 위치: ${q.source}`, `- 제한: ${q.limit}자`, `- 입력 해시: ${q.inputHash}`,
       `- 배정 claim-id: ${q.claims.map(c => c.id).join(', ')}`, '',
       ...(q.requirementIds ? [`- 배정 요구 ID: ${q.requirementIds.join(', ') || '없음'}`, ...(q.requirementNote ? [`- 요구 배정 메모: ${q.requirementNote}`] : []), ''] : []),
+      ...(q.answerPlan ? [`- 문항별 답변 설계: ${q.answerPlan}`, ''] : []),
       ...(q.draftCheckpoint?.file ? [`- 현재 초안: ${q.draftCheckpoint.file}`, ''] : []),
       ...(q.previousDraft ? [`- 기존 초안 참고: ${q.previousDraft} (현재 입력 기준 재검토 필요)`, ''] : []),
       ...(q.instructions ? [`- 작성 요청: ${q.instructions}`, ''] : [])])].join('\n');

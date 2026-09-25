@@ -28,6 +28,15 @@ test('배정한 검증 사실과 역할 제한만 전달하고 확인 필요 cla
   request.questions[0].claimIds.push('WORK-002');
   assert.throws(() => buildPacket(root, request), /검증된 claim이 아닙니다/);
 });
+test('문항별 답변 설계 변경은 해당 문항의 작성 입력을 갱신한다', t => {
+  const { root, request } = fixture(t);
+  request.questions.push({ ...request.questions[0], id: 'Q2' });
+  const before = buildPacket(root, request);
+  request.questions[0].answerPlan = '질문의 성과를 먼저 답하고 본인 판단으로 입증';
+  const after = buildPacket(root, request);
+  assert.notEqual(after.questions[0].inputHash, before.questions[0].inputHash);
+  assert.equal(after.questions[1].inputHash, before.questions[1].inputHash);
+});
 test('packet.md는 원문 반복 없이 claim 사전·표현 제한을 한 번만 두고 문항별 배정을 보존', t => {
   const { root, put, request, requestFile } = fixture(t);
   put('profile/experiences/work.md', '# 서비스 운영\n- 본인 역할: API 개발\n\n### WORK-001\n- 사실: API를 개발했다.\n- 근거: 업무일지 2쪽\n- 상태: 검증됨\n\n### WORK-003\n- 사실: 장애 원인을 분석했다.\n- 근거: 장애 기록 3쪽\n- 상태: 검증됨\n\n## 사용하면 안 되는 표현\n- 팀 운영 성과를 단독 성과로 쓰지 않는다.\n');
@@ -35,6 +44,7 @@ test('packet.md는 원문 반복 없이 claim 사전·표현 제한을 한 번�
   put('company/analysis.md', '# analysis\n작성에 필요한 분석 문자열\n');
   put('company/fit.md', '# fit\nFIT 전체 전문에만 있는 문자열\n');
   request.questions[0].claimIds = ['WORK-001', 'WORK-003'];
+  request.questions[0].answerPlan = '질문의 성과를 먼저 답하고, 본인 판단과 결과를 근거로 든다.';
   request.questions.push({ ...request.questions[0], id: 'Q2', claimIds: ['WORK-001'] });
   fs.writeFileSync(requestFile, JSON.stringify(request));
   const out = path.join(root, '.work/packet.json');
@@ -46,6 +56,7 @@ test('packet.md는 원문 반복 없이 claim 사전·표현 제한을 한 번�
   assert.equal(occurrences(/^### WORK-001$/gm), 1);
   assert.equal(occurrences(/팀 운영 성과를 단독 성과로 쓰지 않는다\./g), 1);
   assert.match(markdown, /## Q1:[\s\S]*배정 claim-id: WORK-001, WORK-003/);
+  assert.match(markdown, /## Q1:[\s\S]*문항별 답변 설계: 질문의 성과를 먼저 답하고/);
   assert.match(markdown, /## Q2:[\s\S]*배정 claim-id: WORK-001/);
   assert.match(markdown, /- 공식 JD: company\/jd\.md/);
   assert.match(markdown, /- 적합도 판단: company\/fit\.md/);
